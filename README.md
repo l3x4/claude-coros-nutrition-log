@@ -14,7 +14,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 - Burn = base metabolism + COROS active calories × a correction factor, fitted from your weight trend
 - A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
 - Morning weight with a 7-day average, weekly balance, 14-day eaten vs burned chart
-- English and Russian
+- English and Russian: the page starts in the language you talk to Claude in, and you can switch it in Settings
 
 ## What you need
 

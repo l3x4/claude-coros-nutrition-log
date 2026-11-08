@@ -61,11 +61,6 @@ p { margin: 0; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; min-width: 0; }
 
 .top { display: grid; gap: 10px; }
-.top-row { display: flex; align-items: flex-start; gap: 12px; }
-.top-row > div:first-child { flex: 1 1 auto; min-width: 0; }
-.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
-.lang button { border: 0; background: var(--panel); padding: 5px 9px; font-size: 12px; font-weight: 600; color: var(--muted); }
-.lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .progress { display: grid; gap: 6px; }
 .status { font-size: 13px; color: var(--muted); }
 .status:empty { display: none; }
@@ -213,15 +208,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <body>
 <main class="wrap">
   <header class="top">
-    <div class="top-row">
-      <div>
-        <h1 data-i18n="title">Food, weight &amp; burn</h1>
-        <p class="sub" id="goalLine"></p>
-      </div>
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" data-lang="en" aria-pressed="true">EN</button>
-        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
-      </div>
+    <div>
+      <h1 data-i18n="title">Food, weight &amp; burn</h1>
+      <p class="sub" id="goalLine"></p>
     </div>
     <div class="progress">
       <div class="track" aria-hidden="true"><div class="fill ok" id="goalFill"></div></div>
@@ -345,6 +334,13 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     <details id="settingsDetails">
       <summary id="setH" data-i18n="setH"></summary>
       <form id="settingsForm" autocomplete="off" class="meal-form">
+        <div class="set-block">
+          <div class="set-grid">
+            <label class="field" for="sLang">Language · Язык
+              <select id="sLang"><option value="en">English</option><option value="ru">Русский</option></select>
+            </label>
+          </div>
+        </div>
         <div class="set-block">
           <h3 data-i18n="profH"></h3>
           <div class="set-grid">
@@ -607,7 +603,15 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     lang: "en", col: null, docs: new Map(), selected: null, editing: null, loaded: false, settingsDirty: false,
     mcp: null, coros: new Map(), corosAt: null, corosErr: null, corosAsk: false, syncing: new Map()
   };
-  try { var savedLang = window.localStorage.getItem("nutrition-log-lang"); if (savedLang === "ru" || savedLang === "en") state.lang = savedLang; } catch (e) {}
+  // Language: the saved setting wins once loaded (Claude sets it at setup to the language you chat in).
+  // Before that: the last choice cached in this browser, else the browser or app language.
+  (function () {
+    var cached = null;
+    try { cached = window.localStorage.getItem("nutrition-log-lang"); } catch (e) {}
+    if (cached === "ru" || cached === "en") { state.lang = cached; return; }
+    var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "";
+    state.lang = /^ru\b/i.test(nav) ? "ru" : "en";
+  })();
 
   function t(key, vars) {
     var s = (STR[state.lang] && STR[state.lang][key]);
@@ -945,7 +949,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     document.querySelectorAll("[data-i18n]").forEach(function (n) { n.textContent = t(n.getAttribute("data-i18n")); });
     document.querySelectorAll("[data-i18n-ph]").forEach(function (n) { n.setAttribute("placeholder", t(n.getAttribute("data-i18n-ph"))); });
     document.querySelectorAll("[data-i18n-aria]").forEach(function (n) { n.setAttribute("aria-label", t(n.getAttribute("data-i18n-aria"))); });
-    document.querySelectorAll(".lang button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === state.lang)); });
+    $("#sLang").value = state.lang;
     var cut = $("#sCut"), cur = cut.value;
     cut.textContent = "";
     for (var h = 0; h <= 8; h++) {
@@ -1464,7 +1468,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function renderSettings() {
     var s = settings();
     $("#targSrc").textContent = s.customTargets ? t("targCustom") : t("targSuggested");
-    if (state.settingsDirty) return;
+    if (state.settingsDirty) {
+      document.querySelectorAll("#targetsBody tr").forEach(function (tr, i) { tr.firstChild.textContent = typeLabel(TYPES[i]); });
+      return;
+    }
     var raw = rawSettings(), p = profile();
     fillTargetInputs(s.targets);
     $("#sSex").value = p.sex;
@@ -1752,9 +1759,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function wire() {
     applyStatic();
     resetForm();
-    document.querySelectorAll(".lang button").forEach(function (b) {
-      b.addEventListener("click", function () { setLang(b.getAttribute("data-lang"), true); });
-    });
+    $("#sLang").addEventListener("change", function (e) { setLang(e.target.value, true); });
     $("#corosBtn").addEventListener("click", askCoros);
     $("#onbBtn").addEventListener("click", function () {
       $("#settingsDetails").open = true;
@@ -1768,7 +1773,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#mCancel").addEventListener("click", function () { resetForm(); $("#mealDetails").open = false; });
     $("#settingsForm").addEventListener("submit", function (e) { submitSettings(e, false); });
     $("#resetTargets").addEventListener("click", function () { submitSettings(null, true); });
-    $("#settingsForm").addEventListener("input", function () { state.settingsDirty = true; });
+    $("#settingsForm").addEventListener("input", function (e) { if (e.target.id !== "sLang") state.settingsDirty = true; });
     if (window.ResizeObserver) {
       var lastW = 0;
       new ResizeObserver(function (entries) {

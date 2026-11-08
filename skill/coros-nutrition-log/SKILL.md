@@ -65,7 +65,7 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
   "targets": {"rest": {"kcal": 1900, "p": 170, "f": 65, "c": 160}}
 }
 ```
-All fields are optional. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
+All fields are optional. `lang` (`en` | `ru`) is the page language: at setup it is set to the language the user writes to you in, and the user can change it in Settings. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
 
 ## 4. How the page computes things (for answering questions)
 
