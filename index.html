@@ -115,16 +115,23 @@ td.partial { color: var(--muted); }
 .weight label { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
 input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
 textarea { resize: vertical; min-height: 60px; }
-/* Date fields show the date in the page's language; the native picker sits invisibly on top, because
-   browsers format <input type="date"> by the device's region, not by the page. */
-.datebox { position: relative; display: block; min-width: 0; }
-.date-text { display: flex; align-items: center; gap: 6px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+/* Date fields and their calendar are drawn by the page: browsers draw <input type="date"> and its picker
+   in the device's language and calendar, not the page's. */
+.datebox { display: block; min-width: 0; }
+.date-text { display: flex; align-items: center; gap: 6px; width: 100%; text-align: start; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .date-text span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .date-text span.none { color: var(--muted); }
 .date-text svg { flex: none; width: 12px; height: 12px; color: var(--muted); }
-.datebox input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
-.datebox input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: auto; height: auto; margin: 0; padding: 0; background: none; cursor: pointer; }
-.datebox:focus-within .date-text { outline: 2px solid var(--accent); outline-offset: 2px; }
+.picker { position: absolute; z-index: 20; display: grid; gap: 6px; padding: 10px 12px 12px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); }
+.pk-nav { display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: 6px; }
+.pk-nav h3 { margin: 0; text-align: center; font-size: 15px; font-weight: 600; }
+.pk-dow, .pk-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.pk-dow span { padding: 4px 0; text-align: center; font-size: 12px; color: var(--muted); }
+.pk-days button { aspect-ratio: 1; padding: 0; border: 0; border-radius: 999px; background: none; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.pk-days button:hover { background: var(--bg); }
+.pk-days button.today { box-shadow: inset 0 0 0 1px var(--accent); }
+.pk-days button.sel { background: var(--accent); color: var(--on-accent); }
+.pk-actions { display: flex; justify-content: space-between; gap: 8px; padding-top: 2px; }
 
 .meals { display: grid; }
 .meal { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -188,7 +195,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 .chart .cursor { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
 .readout { font-size: 13px; color: var(--muted); min-height: 1.45em; }
 .readout b { color: var(--ink); font-weight: 600; unicode-bidi: isolate; }
-[dir="rtl"] .icon { transform: scaleX(-1); }
+/* ‹ and › mirror on their own in right-to-left text, so the arrow buttons need no flip. */
 .chart .eat { fill: var(--s-eat); }
 .chart .eat.dim { opacity: 0.45; }
 .chart .burn { fill: none; stroke: var(--s-burn); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -365,8 +372,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
             <label class="field" for="sHeight"><span data-i18n="heightLbl"></span><input id="sHeight" inputmode="numeric"></label>
             <label class="field" for="sStart"><span data-i18n="startLbl"></span><input id="sStart" inputmode="decimal"></label>
             <label class="field" for="sGoal"><span data-i18n="goalLblW"></span><input id="sGoal" inputmode="decimal"></label>
-            <label class="field" for="sStartDate"><span data-i18n="startDateLbl"></span><span class="datebox"><span class="date-text" aria-hidden="true"><span></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><input id="sStartDate" type="date"></span></label>
-            <label class="field" for="sGoalDate"><span data-i18n="goalDateLbl"></span><span class="datebox"><span class="date-text" aria-hidden="true"><span></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><input id="sGoalDate" type="date"></span></label>
+            <label class="field" for="sStartDateBtn"><span data-i18n="startDateLbl"></span><span class="datebox"><button type="button" class="date-text" id="sStartDateBtn" data-for="sStartDate" aria-haspopup="dialog" aria-expanded="false"><span></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><input type="hidden" id="sStartDate"></span></label>
+            <label class="field" for="sGoalDateBtn"><span data-i18n="goalDateLbl"></span><span class="datebox"><button type="button" class="date-text" id="sGoalDateBtn" data-for="sGoalDate" aria-haspopup="dialog" aria-expanded="false"><span></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><input type="hidden" id="sGoalDate"></span></label>
             <label class="field wide" for="sNote"><span data-i18n="noteLbl"></span><input id="sNote" maxlength="80" data-i18n-ph="notePh"></label>
           </div>
           <p class="hint" data-i18n="dateHint"></p>
@@ -397,11 +404,24 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     </details>
   </section>
 </main>
+<div class="picker" id="picker" role="dialog" aria-labelledby="pkTitle" hidden>
+  <div class="pk-nav">
+    <button class="icon" id="pkPrev" type="button" data-i18n-aria="prevMonth">‹</button>
+    <h3 id="pkTitle" aria-live="polite"></h3>
+    <button class="icon" id="pkNext" type="button" data-i18n-aria="nextMonth">›</button>
+  </div>
+  <div class="pk-dow" id="pkDow" aria-hidden="true"></div>
+  <div class="pk-days" id="pkDays"></div>
+  <div class="pk-actions">
+    <button class="btn ghost small" id="pkClear" type="button" data-i18n="clear"></button>
+    <button class="btn ghost small" id="pkCancel" type="button" data-i18n="cancel"></button>
+  </div>
+</div>
 
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 2,
+  "_version": 3,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -596,6 +616,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "langLbl": "Language",
   "goalDated": "Goal: {s} → {g} kg by {d}",
   "goalKeep": "Goal: keep {g} kg",
+  "clear": "Clear",
+  "prevMonth": "Previous month",
+  "nextMonth": "Next month",
   "progressKeep": "Now {w} kg ({src}), {d} kg from the goal",
   "paceKeep": "Keeping weight: aim for a balance around zero.",
   "paceNowScale": "Last 7 days: {kcal} kcal a day by the log, weight {kg} kg a week by the scale",
@@ -757,6 +780,124 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     out.classList.toggle("none", !ok);
   }
   function paintDates() { document.querySelectorAll(".datebox input").forEach(paintDate); }
+
+  // ---------- date picker ----------
+  var picker = { input: null, btn: null, focus: null };
+  function firstDayOfWeek() { // 0 = Sunday … 6 = Saturday
+    try {
+      var loc = new Intl.Locale(state.locale);
+      var wi = typeof loc.getWeekInfo === "function" ? loc.getWeekInfo() : loc.weekInfo;
+      if (wi && wi.firstDay) return wi.firstDay % 7;
+    } catch (e) {}
+    var l = state.locale.toLowerCase();
+    if (/^ar(-|$)/.test(l)) return 6;
+    if (/^(en|en-us|en-ca|ja|ko|th|he|zh-tw|pt-br|hi)(-|$)/.test(l)) return 0;
+    return 1;
+  }
+  function openPicker(btn) {
+    var input = document.getElementById(btn.getAttribute("data-for"));
+    picker.input = input; picker.btn = btn;
+    picker.focus = isDate(input.value) ? input.value : today();
+    renderPicker();
+    $("#picker").hidden = false;
+    btn.setAttribute("aria-expanded", "true");
+    placePicker(true);
+    focusDay();
+  }
+  function closePicker(refocus) {
+    if ($("#picker").hidden) return;
+    $("#picker").hidden = true;
+    if (picker.btn) {
+      picker.btn.setAttribute("aria-expanded", "false");
+      if (refocus) picker.btn.focus();
+    }
+  }
+  function placePicker(reveal) {
+    var el = $("#picker"), r = picker.btn.getBoundingClientRect(), vw = document.documentElement.clientWidth;
+    var w = Math.min(320, vw - 16);
+    var left = state.dir === "rtl" ? r.right - w : r.left;
+    left = Math.max(8, Math.min(left, vw - w - 8));
+    el.style.width = w + "px";
+    el.style.left = (left + window.scrollX) + "px";
+    el.style.top = (r.bottom + window.scrollY + 6) + "px";
+    if (reveal) try { el.scrollIntoView({ block: "nearest" }); } catch (e) {}
+  }
+  function renderPicker() {
+    var loc = state.locale, f = parseIso(picker.focus), y = f.getFullYear(), m = f.getMonth();
+    $("#pkTitle").textContent = cap(new Intl.DateTimeFormat(loc, { month: "long", year: "numeric" }).format(new Date(y, m, 1)));
+    var fd = firstDayOfWeek(), names = [];
+    ["short", "narrow"].some(function (style) {
+      var fm = new Intl.DateTimeFormat(loc, { weekday: style });
+      names = [];
+      for (var i = 0; i < 7; i++) names.push(fm.format(new Date(2023, 0, 1 + (fd + i) % 7))); // 1 Jan 2023 was a Sunday
+      return names.every(function (n) { return Array.from(n).length <= 3; });
+    });
+    var dow = $("#pkDow");
+    dow.textContent = "";
+    names.forEach(function (n) { dow.appendChild(el("span", "", n)); });
+    var box = $("#pkDays"), lead = (new Date(y, m, 1).getDay() - fd + 7) % 7, last = new Date(y, m + 1, 0).getDate();
+    var num = new Intl.DateTimeFormat(loc, { day: "numeric" });
+    var full = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    box.textContent = "";
+    for (var i = 0; i < lead; i++) box.appendChild(el("span"));
+    var sel = picker.input.value, now = today();
+    for (var d = 1; d <= last; d++) {
+      var date = new Date(y, m, d), id = iso(date);
+      var dp = num.formatToParts(date).filter(function (x) { return x.type === "day"; })[0]; // "18", not "18日"
+      var b = el("button", (id === sel ? "sel" : "") + (id === now ? " today" : ""), dp ? dp.value : String(d));
+      b.type = "button";
+      b.setAttribute("data-date", id);
+      b.setAttribute("aria-label", full.format(date));
+      if (id === sel) b.setAttribute("aria-pressed", "true");
+      if (id === now) b.setAttribute("aria-current", "date");
+      b.tabIndex = id === picker.focus ? 0 : -1;
+      box.appendChild(b);
+    }
+  }
+  function focusDay() {
+    var b = document.querySelector('#pkDays button[data-date="' + picker.focus + '"]');
+    if (b) b.focus();
+  }
+  function shiftMonth(n) {
+    var f = parseIso(picker.focus), first = new Date(f.getFullYear(), f.getMonth() + n, 1);
+    var last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    picker.focus = iso(new Date(first.getFullYear(), first.getMonth(), Math.min(f.getDate(), last)));
+    renderPicker();
+  }
+  function pickDate(value) {
+    picker.input.value = value;
+    picker.input.dispatchEvent(new Event("input", { bubbles: true }));
+    paintDate(picker.input);
+    closePicker(true);
+  }
+  function wirePicker() {
+    document.querySelectorAll(".datebox button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (!$("#picker").hidden && picker.btn === b) closePicker(true); else openPicker(b);
+      });
+    });
+    $("#pkPrev").addEventListener("click", function () { shiftMonth(-1); });
+    $("#pkNext").addEventListener("click", function () { shiftMonth(1); });
+    $("#pkClear").addEventListener("click", function () { pickDate(""); });
+    $("#pkCancel").addEventListener("click", function () { closePicker(true); });
+    $("#pkDays").addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-date]");
+      if (b) pickDate(b.getAttribute("data-date"));
+    });
+    $("#pkDays").addEventListener("keydown", function (e) {
+      var rtl = state.dir === "rtl";
+      var step = { ArrowLeft: rtl ? 1 : -1, ArrowRight: rtl ? -1 : 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+      if (step) { e.preventDefault(); picker.focus = addDays(picker.focus, step); renderPicker(); focusDay(); }
+      else if (e.key === "PageUp" || e.key === "PageDown") { e.preventDefault(); shiftMonth(e.key === "PageUp" ? -1 : 1); focusDay(); }
+    });
+    $("#picker").addEventListener("keydown", function (e) { if (e.key === "Escape") { e.preventDefault(); closePicker(true); } });
+    document.addEventListener("pointerdown", function (e) {
+      if ($("#picker").hidden) return;
+      if ($("#picker").contains(e.target) || (picker.btn && picker.btn.contains(e.target))) return;
+      closePicker(false);
+    });
+    window.addEventListener("resize", function () { if (!$("#picker").hidden) placePicker(false); });
+  }
   function addDays(s, n) { var d = parseIso(s); d.setDate(d.getDate() + n); return iso(d); }
   // Days run from midnight to midnight in local time, the same as COROS counts calories.
   function today() { return iso(new Date()); }
@@ -1101,6 +1242,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#sLangLbl").textContent = own && own !== EN.langLbl ? EN.langLbl + t("sep") + own : EN.langLbl;
     fillTitles();
     paintDates();
+    closePicker(false);
   }
 
   function renderHeader() {
@@ -2011,6 +2153,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 
   // ---------- wiring ----------
   function wire() {
+    wirePicker();
     applyStatic();
     resetForm();
     $("#sLang").addEventListener("change", function (e) { setLang(e.target.value, true); });
