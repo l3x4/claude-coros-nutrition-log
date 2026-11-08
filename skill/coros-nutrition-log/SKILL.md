@@ -1,0 +1,85 @@
+---
+name: coros-nutrition-log
+description: Sets up and keeps a personal nutrition log page in Claude that reads daily burn from COROS. Use when the user asks to set up the nutrition log, sends a photo or description of food to log, logs morning weight, sets a training day type, or asks for today's totals or balance.
+---
+
+# COROS nutrition log
+
+The user keeps a food, weight and burn log on a page (an artifact) in Claude. You log what they eat from photos or descriptions; the page shows daily totals against targets, morning weight, burn from COROS and the balance. `index.html` in this folder is the page.
+
+Reply in the user's language. Write `desc` and `note` in the user's language too. Store meal kinds, sources and day types as the English keys listed below: the page translates them.
+
+## 1. Find or set up the page
+
+1. Look among the user's artifacts for one titled **Nutrition log** (or the name they gave it). If memory holds its slug, use that. If one exists, use it and skip to step 4.
+2. Otherwise publish `index.html` from this skill folder as a new artifact titled **Nutrition log**. Publish the file exactly as it is: do not edit or reformat it.
+3. Then declare its capabilities (new page: publish first, then declare). Use exactly:
+   ```json
+   {"db": {}, "user": {}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData"]}]}}
+   ```
+   If the user has no COROS connector, declare only `{"db": {}, "user": {}}`: the page works without burn data, and COROS can be added later the same way.
+4. Find the user's data folder: `data/users/<id>/`, where `<id>` is the user's id in this artifact's database (the database "who am I" call returns it). Every document you write goes there and nowhere else.
+5. Ask the user to open the page, allow it to read COROS when asked, and fill **Profile** in Settings (sex, age, height, start and goal weight). If they would rather tell you, write the settings document yourself (format below).
+6. If memory is available, save the slug and data folder so later chats find them.
+
+## 2. Logging rules
+
+- **What is in the photo is what was eaten**, not leftovers, unless the user says otherwise. Shared dishes: count only the user's share as they describe it.
+- **A day ends when the user goes to sleep**, not at midnight. Food eaten after midnight but before they slept belongs to the previous date. When it matters and COROS is connected, check the sleep window (sleep is dated by the wake-up day); otherwise use `dayCutoff` from settings (default 5, meaning 05:00).
+- **When no label or weight is visible, search the web** for the product's package size and nutrition before estimating. For dishes, estimate the portion from what is visible and say what you assumed in `note`.
+- **Write each meal right away**, one write per message, as soon as the user sends it. Do not batch a day's meals.
+- After writing, reply briefly: the breakdown (item → kcal), the entry's kcal and protein, and the day so far against the target. Read the day's documents to total them; other chats may have written entries too.
+- Corrections ("I ate the whole lasagna", "remove the salad"): read the document, then update it with its current version.
+
+## 3. Documents
+
+All paths are inside `data/users/<id>/`. Every write to an existing document needs its current version: read it first.
+
+**Meal**, id `meal-YYYYMMDD-HHMM-<short-slug>` (for example `meal-20261108-1530-lunch`):
+
+```json
+{
+  "kind": "meal",
+  "date": "2026-11-08",
+  "time": "15:30",
+  "title": "lunch",
+  "desc": "Plov with beef ~480 g (~920); tomato salad (~90); cola, can (~135)",
+  "note": "Estimated from the photo: ~150 g meat, ~20 g oil",
+  "kcal": 1150, "p": 50, "f": 41, "c": 144,
+  "src": "photo",
+  "createdAt": 1794127380000
+}
+```
+
+- `date`: the log day (see the sleep rule), `YYYY-MM-DD`. `time`: local `HH:MM` when eaten.
+- `title`: `breakfast` | `lunch` | `dinner` | `snack` | `workout` (fuel during training).
+- `src`: `photo` | `label` (nutrition label seen) | `said` (described, no photo) | `manual`.
+- `kcal`, `p`, `f`, `c`: whole numbers (kcal, grams of protein, fat, carbs). Keep `kcal` close to 4p + 9f + 4c unless alcohol or fibre explains the gap.
+- `createdAt`: current time in milliseconds.
+
+**Day**, id `day-YYYY-MM-DD`: `{"kind": "day", "date": "2026-11-08", "type": "maint", "weight": 94.6}`
+- `type`: `rest` (no training) | `regular` (easy run up to 1.5 h) | `key` (intervals, long run, big climbing, race-like) | `maint` (no deficit: taper, race, recovery, travel) | `carb` (carb loading 1–2 days before a race).
+- `weight`: morning weight in kg, one decimal.
+- `active` and `activeAt` are written by the page from COROS (active kcal). Leave them alone.
+
+**Settings**, id `settings`:
+```json
+{
+  "lang": "en", "sex": "male", "age": 42, "height": 180,
+  "startWeight": 84, "goalWeight": 78, "goalNote": "Trail 60K, May",
+  "dayCutoff": 5,
+  "targets": {"rest": {"kcal": 1900, "p": 170, "f": 65, "c": 160}}
+}
+```
+All fields are optional. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
+
+## 4. How the page computes things (for answering questions)
+
+- Base metabolism: Mifflin–St Jeor from the 7-day average weight (or last weigh-in, or start weight): 10 × kg + 6.25 × cm − 5 × age + 5 (male) or − 161 (female).
+- Burn for a day = base + COROS active kcal × factor. The factor starts at 0.85 (watches tend to overestimate). Once the last 4 weeks hold at least 10 weigh-ins and 14 days with both meals and COROS data, the factor is refit so that average intake minus the weight trend (7,700 kcal per kg) equals average burn.
+- Balance = eaten − burn; negative is a deficit.
+- Suggested targets: base × 1.25 scaled by day type (rest ×0.82 but never below base metabolism, easy ×1.04, key ×1.38), no deficit = base metabolism × 1.45; protein 1.8 g/kg (1.7 on no-deficit days), fat 0.7–0.85 g/kg, carbs fill the rest; carb loading = 7 g carbs, 1.4 g protein, 0.55 g fat per kg.
+
+## 5. Privacy
+
+Each person's data sits in their own `data/users/<id>/` folder, which nobody else can read, the page owner included. Do not read or write other folders. The page reads only the daily COROS summary, and only after the user allows it.

@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nutrition log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Logbook: one column. Day first, then the week, intake vs burn, the weight trend, settings. */
+  --bg: #f2f4f1;
+  --panel: #ffffff;
+  --ink: #1b2422;
+  --muted: #5b6663;
+  --line: #dce1dc;
+  --accent: #1f5f8b;
+  --on-accent: #ffffff;
+  --track: #e7ebe6;
+  --ok: #2e7d4f;
+  --warn: #a8661a;
+  --bad: #b42318;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  /* Intake vs burn chart: categorical slots 1–2, validated against --panel in both modes. */
+  --s-eat: #2a78d6;
+  --s-burn: #eb6834;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111615; --panel: #1a201f; --ink: #e5eae7; --muted: #9ba6a2; --line: #2c3533;
+    --accent: #72aad6; --on-accent: #0c1822; --track: #262e2c;
+    --ok: #62b986; --warn: #dba358; --bad: #ef7b70;
+    --s-eat: #3987e5; --s-burn: #d95926;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111615; --panel: #1a201f; --ink: #e5eae7; --muted: #9ba6a2; --line: #2c3533;
+  --accent: #72aad6; --on-accent: #0c1822; --track: #262e2c;
+  --ok: #62b986; --warn: #dba358; --bad: #ef7b70;
+  --s-eat: #3987e5; --s-burn: #d95926;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font-body); -webkit-text-size-adjust: 100%; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 18px 16px 48px; display: grid; gap: 14px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+h1 { font: 600 26px/1.15 var(--font-display); letter-spacing: 0.005em; }
+h2 { font: 600 18px/1.2 var(--font-display); }
+h3 { font: 600 15px/1.2 var(--font-display); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+p { margin: 0; }
+.num { font-variant-numeric: tabular-nums; }
+.sub { color: var(--muted); font-size: 14px; }
+.hint { color: var(--muted); font-size: 13px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; min-width: 0; }
+
+.top { display: grid; gap: 10px; }
+.top-row { display: flex; align-items: flex-start; gap: 12px; }
+.top-row > div:first-child { flex: 1 1 auto; min-width: 0; }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex: none; }
+.lang button { border: 0; background: var(--panel); padding: 5px 9px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.lang button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.progress { display: grid; gap: 6px; }
+.status { font-size: 13px; color: var(--muted); }
+.status:empty { display: none; }
+.status.warn { color: var(--warn); }
+.status.bad { color: var(--bad); }
+.onb { border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
+
+.track { position: relative; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
+.fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; background: var(--accent); }
+.fill.ok { background: var(--ok); }
+.fill.over { background: var(--warn); }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width 0.25s ease; } }
+
+.day-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.day-nav h2 { flex: 1 1 auto; min-width: 0; text-align: center; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.icon { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); font-size: 20px; line-height: 1; }
+.btn { background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); border-radius: 8px; padding: 9px 14px; font-weight: 600; }
+.btn.ghost { background: transparent; color: var(--accent); border-color: var(--line); }
+.btn.small { padding: 6px 10px; font-size: 13px; }
+.btn:disabled { opacity: 0.55; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 11px; font-size: 13px; }
+.chip .num { color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip[aria-pressed="true"] .num { color: inherit; opacity: 0.85; }
+
+.kcal { display: grid; gap: 2px; }
+.kcal-big { font: 600 34px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.kcal-of { font-size: 16px; color: var(--muted); }
+.left { font-size: 14px; color: var(--ok); }
+.left.over { color: var(--warn); }
+
+.burn { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.burn-line { font-size: 15px; display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; }
+.burn-line b { font: 600 18px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.burn .actions { margin-top: 4px; }
+td.partial { color: var(--muted); }
+
+.bars { display: grid; gap: 8px; }
+.bar { display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+.bar-l { color: var(--muted); }
+.bar-v { white-space: nowrap; }
+
+.weight { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: end; }
+.weight label { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 60px; }
+
+.meals { display: grid; }
+.meal { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.meal:first-child { border-top: 0; }
+.meal-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-weight: 600; }
+.meal-time { color: var(--muted); font-weight: 400; font-size: 13px; }
+.tag { font-size: 11px; font-weight: 500; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
+.meal-desc { font-size: 14px; overflow-wrap: anywhere; }
+.meal-note { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.meal-macros { font-size: 12px; color: var(--muted); }
+.meal-side { display: grid; justify-items: end; align-content: start; gap: 6px; }
+.meal-kcal { font: 600 18px/1.2 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meal-actions { display: flex; gap: 4px; }
+.link { background: none; border: 0; padding: 2px 4px; font-size: 12px; color: var(--accent); }
+.link.danger { color: var(--bad); }
+.empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
+
+details > summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14px; }
+details[open] > summary { margin-bottom: 10px; }
+.meal-form { display: grid; gap: 8px; }
+.row2 { display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.set-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.set-grid .wide { grid-column: 1 / -1; }
+.set-block { display: grid; gap: 8px; padding-top: 4px; }
+
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 600px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; }
+.tile-k { font-size: 12px; color: var(--muted); }
+.tile-v { font: 600 20px/1.2 var(--font-display); white-space: nowrap; }
+.tile-s { font-size: 12px; color: var(--muted); }
+.tile-v.good { color: var(--ok); }
+.tile-v.bad { color: var(--warn); }
+
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 7px 4px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; }
+td.r, th.r { text-align: right; }
+#weekBody tr { cursor: pointer; }
+tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.dot.ok { background: var(--ok); }
+.dot.over { background: var(--warn); }
+.dot.low { border: 1.5px solid var(--muted); }
+.legend { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+
+.chart svg { display: block; overflow: visible; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .axis { fill: var(--muted); font: 11px var(--font-mono); }
+.chart .goal { stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.chart .goal-t { fill: var(--ok); font: 11px var(--font-mono); }
+.chart .avg { fill: none; stroke: var(--accent); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+.chart .pt { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+.chart .pt.last { fill: var(--accent); }
+.chart .last-t { fill: var(--ink); font: 500 12px var(--font-mono); }
+.chart .cursor { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
+.readout { font-size: 13px; color: var(--muted); min-height: 1.45em; }
+.readout b { color: var(--ink); font-weight: 600; }
+.chart .eat { fill: var(--s-eat); }
+.chart .eat.dim { opacity: 0.45; }
+.chart .burn { fill: none; stroke: var(--s-burn); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .burn-pt { fill: var(--s-burn); stroke: var(--panel); stroke-width: 2; }
+.chart .burn-pt.partial { fill: var(--panel); stroke: var(--s-burn); stroke-width: 2; }
+.chart .sel-band { fill: var(--accent); opacity: 0.08; }
+.chart .xl { fill: var(--muted); font: 10px var(--font-mono); }
+.chart .xl.sel { fill: var(--ink); font-weight: 500; }
+.chart svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.keys { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.sw-bar { width: 10px; height: 10px; border-radius: 2px; background: var(--s-eat); }
+.sw-line { width: 16px; height: 2px; border-radius: 1px; background: var(--s-burn); }
+
+.targets td { padding: 4px; }
+.targets input { padding: 6px 6px; text-align: right; font-variant-numeric: tabular-nums; }
+.targets td:first-child { white-space: normal; min-width: 92px; }
+
+@media (max-width: 420px) {
+  h1 { font-size: 23px; }
+  .kcal-big { font-size: 28px; }
+  .bar { grid-template-columns: 62px 1fr auto; gap: 8px; }
+  .tile-v { font-size: 18px; }
+  table { font-size: 12.5px; }
+  .tile { padding: 7px 8px; }
+  .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <h1 data-i18n="title">Food, weight &amp; burn</h1>
+        <p class="sub" id="goalLine"></p>
+      </div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="ru" aria-pressed="false">RU</button>
+      </div>
+    </div>
+    <div class="progress">
+      <div class="track" aria-hidden="true"><div class="fill ok" id="goalFill"></div></div>
+      <p class="sub" id="goalText"></p>
+    </div>
+    <p class="status" id="status" role="status"></p>
+    <div class="onb" id="onb" hidden>
+      <p data-i18n="onbText"></p>
+      <div class="actions"><button class="btn small" type="button" id="onbBtn" data-i18n="onbBtn"></button></div>
+    </div>
+  </header>
+
+  <section class="card" aria-labelledby="dayH">
+    <div class="day-nav">
+      <button class="icon" id="prevDay" type="button" data-i18n-aria="prevDay">‹</button>
+      <h2 id="dayH"><span id="dayLabel">—</span></h2>
+      <button class="icon" id="nextDay" type="button" data-i18n-aria="nextDay">›</button>
+    </div>
+    <div class="actions" id="todayWrap" hidden><button class="btn ghost small" id="todayBtn" type="button" data-i18n="backToday"></button></div>
+
+    <div class="chips" id="typeChips" role="group" data-i18n-aria="dayType"></div>
+    <p class="hint" id="typeHint"></p>
+
+    <div class="kcal">
+      <p><span class="kcal-big num" id="kcalEaten">0</span><span class="kcal-of"> / <span class="num" id="kcalTarget">—</span> <span data-i18n="kcal"></span></span></p>
+      <p class="left" id="kcalLeft"></p>
+    </div>
+    <div class="burn" id="burnBox">
+      <p class="burn-line"><span><span data-i18n="burn"></span> <b id="burnTotal">—</b></span><span><span data-i18n="balance"></span> <b id="burnBal">—</b></span></p>
+      <p class="hint num" id="burnHint"></p>
+      <div class="actions" id="corosAct" hidden><button class="btn ghost small" id="corosBtn" type="button" data-i18n="corosBtn"></button></div>
+    </div>
+    <div class="bars" id="bars"></div>
+
+    <form class="weight" id="weightForm" autocomplete="off">
+      <label for="weightInput" data-i18n="weightLbl"></label>
+      <input id="weightInput" name="weight" inputmode="decimal" data-i18n-ph="weightPh">
+      <button class="btn" type="submit" data-i18n="save"></button>
+    </form>
+
+    <div class="meals-wrap">
+      <h3 data-i18n="foodH"></h3>
+      <div class="meals" id="meals"></div>
+    </div>
+
+    <details id="mealDetails">
+      <summary id="mealSummary"></summary>
+      <form id="mealForm" class="meal-form" autocomplete="off">
+        <div class="row2">
+          <label class="field" for="mTitle"><span data-i18n="mealLbl"></span>
+            <select id="mTitle" name="title"></select>
+          </label>
+          <label class="field" for="mTime"><span data-i18n="timeLbl"></span>
+            <input id="mTime" name="time" type="time">
+          </label>
+        </div>
+        <label class="field" for="mDesc"><span data-i18n="whatLbl"></span>
+          <input id="mDesc" name="desc" data-i18n-ph="whatPh">
+        </label>
+        <div class="grid4">
+          <label class="field" for="mKcal"><span data-i18n="kcalLbl"></span><input id="mKcal" name="kcal" inputmode="numeric" data-i18n-ph="autoPh"></label>
+          <label class="field" for="mP"><span data-i18n="pLbl"></span><input id="mP" name="p" inputmode="decimal"></label>
+          <label class="field" for="mF"><span data-i18n="fLbl"></span><input id="mF" name="f" inputmode="decimal"></label>
+          <label class="field" for="mC"><span data-i18n="cLbl"></span><input id="mC" name="c" inputmode="decimal"></label>
+        </div>
+        <p class="hint" data-i18n="autoHint"></p>
+        <div class="actions">
+          <button class="btn" type="submit" id="mSave"></button>
+          <button class="btn ghost" type="button" id="mCancel" data-i18n="cancel" hidden></button>
+        </div>
+      </form>
+    </details>
+    <p class="hint" id="dayHint"></p>
+  </section>
+
+  <section class="card" aria-labelledby="weekH">
+    <h2 id="weekH" data-i18n="weekH"></h2>
+    <div class="tiles">
+      <div class="tile"><span class="tile-k" data-i18n="tAvgK"></span><span class="tile-v" id="tAvgK">—</span><span class="tile-s" id="tAvgKs"></span></div>
+      <div class="tile"><span class="tile-k" data-i18n="tBal"></span><span class="tile-v" id="tBal">—</span><span class="tile-s" id="tBalS"></span></div>
+      <div class="tile"><span class="tile-k" data-i18n="tAvgW"></span><span class="tile-v" id="tAvgW">—</span><span class="tile-s" id="tAvgWs"></span></div>
+      <div class="tile"><span class="tile-k" data-i18n="tDelta"></span><span class="tile-v" id="tDelta">—</span><span class="tile-s" id="tDeltaS"></span></div>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th data-i18n="thDay"></th><th data-i18n="thType"></th><th class="r" data-i18n="thKcal"></th><th class="r" data-i18n="thBal"></th><th class="r" data-i18n="thP"></th><th class="r" data-i18n="thW"></th></tr></thead>
+        <tbody id="weekBody"></tbody>
+      </table>
+    </div>
+    <p class="legend"><span><span class="dot ok"></span><span data-i18n="legOk"></span></span><span><span class="dot over"></span><span data-i18n="legOver"></span></span><span><span class="dot low"></span><span data-i18n="legLow"></span></span></p>
+    <p class="hint" data-i18n="balHint"></p>
+  </section>
+
+  <section class="card" aria-labelledby="ebH">
+    <h2 id="ebH" data-i18n="ebH"></h2>
+    <p class="keys"><span class="key"><span class="sw-bar" aria-hidden="true"></span><span data-i18n="keyEat"></span></span><span class="key"><span class="sw-line" aria-hidden="true"></span><span data-i18n="keyBurn"></span></span></p>
+    <p class="readout num" id="ebReadout"></p>
+    <div class="chart" id="ebChart"></div>
+    <details>
+      <summary data-i18n="ebTable"></summary>
+      <div class="scroll">
+        <table>
+          <thead><tr><th data-i18n="thDay"></th><th class="r" data-i18n="thEat"></th><th class="r" data-i18n="thBurn"></th><th class="r" data-i18n="thBal"></th></tr></thead>
+          <tbody id="ebBody"></tbody>
+        </table>
+      </div>
+    </details>
+    <p class="hint" data-i18n="ebHint"></p>
+  </section>
+
+  <section class="card" aria-labelledby="wH">
+    <h2 id="wH" data-i18n="wH"></h2>
+    <p class="readout num" id="readout"></p>
+    <div class="chart" id="chart"></div>
+    <p class="hint" data-i18n="wHint"></p>
+  </section>
+
+  <section class="card" aria-labelledby="setH" id="settingsCard">
+    <details id="settingsDetails">
+      <summary id="setH" data-i18n="setH"></summary>
+      <form id="settingsForm" autocomplete="off" class="meal-form">
+        <div class="set-block">
+          <h3 data-i18n="profH"></h3>
+          <div class="set-grid">
+            <label class="field" for="sSex"><span data-i18n="sexLbl"></span>
+              <select id="sSex"><option value="male" data-i18n="male"></option><option value="female" data-i18n="female"></option></select>
+            </label>
+            <label class="field" for="sAge"><span data-i18n="ageLbl"></span><input id="sAge" inputmode="numeric"></label>
+            <label class="field" for="sHeight"><span data-i18n="heightLbl"></span><input id="sHeight" inputmode="numeric"></label>
+            <label class="field" for="sStart"><span data-i18n="startLbl"></span><input id="sStart" inputmode="decimal"></label>
+            <label class="field" for="sGoal"><span data-i18n="goalLblW"></span><input id="sGoal" inputmode="decimal"></label>
+            <label class="field" for="sCut"><span data-i18n="cutLbl"></span><select id="sCut"></select></label>
+            <label class="field wide" for="sNote"><span data-i18n="noteLbl"></span><input id="sNote" maxlength="80" data-i18n-ph="notePh"></label>
+          </div>
+          <p class="hint" data-i18n="cutHint"></p>
+        </div>
+        <div class="set-block">
+          <h3 data-i18n="burnH"></h3>
+          <div class="set-grid">
+            <label class="field" for="sK"><span data-i18n="kLbl"></span><input id="sK" inputmode="decimal" data-i18n-ph="autoPh"></label>
+          </div>
+          <p class="hint" id="kInfo"></p>
+        </div>
+        <div class="set-block">
+          <h3 data-i18n="targH"></h3>
+          <p class="hint" id="targSrc"></p>
+          <div class="scroll">
+            <table class="targets">
+              <thead><tr><th data-i18n="thType"></th><th class="r" data-i18n="kcalLbl"></th><th class="r" data-i18n="thP"></th><th class="r" data-i18n="thF"></th><th class="r" data-i18n="thC"></th></tr></thead>
+              <tbody id="targetsBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" data-i18n="targHint"></p>
+        </div>
+        <div class="actions">
+          <button class="btn" type="submit" data-i18n="saveSettings"></button>
+          <button class="btn ghost" type="button" id="resetTargets" data-i18n="resetTargets"></button>
+        </div>
+      </form>
+    </details>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- text ----------
+  var STR = {
+    en: {
+      title: "Food, weight & burn",
+      goal: "Goal: {s} → {g} kg", goalNone: "Set your start and goal weight in Settings",
+      progressNone: "Log your morning weight to see progress",
+      progressNow: "Now {w} kg ({src}), {delta} of {total} kg", src7: "7-day average", srcLast: "last weigh-in",
+      lost: "lost {x}", gained: "up {x}",
+      onbText: "Welcome! Start with your profile in Settings at the bottom of the page: sex, age, height and weight. Daily targets and burn are calculated from it.",
+      onbBtn: "Open settings",
+      prevDay: "Previous day", nextDay: "Next day", backToday: "Back to today", dayType: "Day type",
+      typePick: "Pick the day type. Until then the Easy day target is used.",
+      kcal: "kcal", left: "{n} kcal left", over: "{n} kcal over target",
+      burn: "Burn", balance: "Balance", burnParts: "base {b} + watch {a} × {k}",
+      dayRunning: "day in progress", corosAt: "COROS at {t}",
+      corosNoDay: "No COROS data for this day.", corosNotYet: "COROS hasn't returned this day yet.",
+      corosBtn: "Allow reading COROS",
+      barKcal: "Kcal", barP: "Protein", barF: "Fat", barC: "Carbs", g: "g",
+      weightLbl: "Morning weight, kg", weightPh: "e.g. 94.6", save: "Save", weightBad: "Weight should be a number, e.g. 94.6.",
+      foodH: "Food log", mealsEmpty: "Nothing yet. Send a food photo to Claude in chat or add it manually.",
+      edit: "Edit", del: "Delete", delSure: "Delete?", mealFallback: "Meal",
+      addManual: "Add manually", editEntry: "Edit entry",
+      mealLbl: "Meal", timeLbl: "Time", whatLbl: "What you ate", whatPh: "rice 200 g, chicken 150 g",
+      kcalLbl: "Kcal", pLbl: "Protein, g", fLbl: "Fat, g", cLbl: "Carbs, g", autoPh: "auto",
+      autoHint: "Without kcal they are computed from macros: 4 × protein + 9 × fat + 4 × carbs.",
+      add: "Add", saveChanges: "Save changes", cancel: "Cancel", needKcal: "Enter kcal or at least the macros.",
+      dayHint: "Send food photos to Claude in chat: it estimates them and logs them here. A photo estimate is about ±25% per plate. The day ends when you go to sleep: food eaten before {h} counts to the previous day. Burn comes from COROS with a correction (see Settings).",
+      weekH: "Last 7 days",
+      tAvgK: "Eaten, average", tAvgKs: "target {t} · days: {n}", noLogs: "no logs",
+      tBal: "Balance, week", tBalS: "≈ {kg} kg · days: {n}", tBalNone: "needs logs and COROS",
+      tAvgW: "Weight, average", tAvgWs: "weigh-ins: {n}", noWeigh: "no weigh-ins",
+      tDelta: "vs last week", tDeltaS: "kg per week", tDeltaNone: "needs 2 weeks of weigh-ins",
+      thDay: "Day", thType: "Day type", thKcal: "Kcal / target", thBal: "Balance", thP: "P, g", thF: "F, g", thC: "C, g", thW: "Weight", thEat: "Eaten", thBurn: "Burn",
+      legOk: "±7% of target", legOver: "above target", legLow: "under 80%: something not logged?",
+      balHint: "Balance = eaten − burned: minus means a deficit. 7,700 kcal of deficit ≈ 1 kg of fat. Today's balance is grey: the day isn't over.",
+      ebH: "Eaten and burned, 14 days", keyEat: "Eaten", keyBurn: "Burn: COROS with correction",
+      ebTable: "As a table", ebHint: "Tap a day to open it above. A hollow dot is today: the watch is still counting and food may not all be logged yet.",
+      ebEmpty: "No logs or COROS data in the last 14 days yet.", ebAria: "Eaten and burned per day for 14 days; details in the table below",
+      ebEaten: "eaten", ebBurn: "burn", ebBal: "balance", ebRunning: "(day in progress)",
+      wH: "Weight", wEmpty: "Weigh yourself in the morning before eating and log it. Dots and a 7-day average will appear here.",
+      wHint: "Dots are morning weigh-ins, the line is the 7-day average. Watch the line: daily weight jumps 0.5–1.5 kg with water and salt.",
+      wReadout: "{d}: {w} kg, 7-day average {a}", goalShort: "goal", wAria: "Morning weight and 7-day average",
+      setH: "Settings and targets", profH: "Profile",
+      sexLbl: "Sex", male: "Male", female: "Female", ageLbl: "Age", heightLbl: "Height, cm",
+      startLbl: "Start, kg", goalLblW: "Goal, kg", noteLbl: "Goal note (optional)", notePh: "e.g. Rinjani 100, May 2027",
+      cutLbl: "Day ends at", cutMidnight: "00:00 (midnight)",
+      cutHint: "Food logged after midnight and before this hour counts to the previous day, so a late snack before sleep stays with its day.",
+      burnH: "Burn", kLbl: "Watch factor",
+      kBase: "Burn = base metabolism (Mifflin–St Jeor, from your weight) + COROS active calories × factor. ",
+      kManual: "Now {k}, set by hand. Clear the field to fit it from your weight trend.",
+      kWeight: "Now {k}: fitted from your weight trend and logs over {n} days; real burn ≈ {tdee} kcal a day. In the first 2 weeks of a deficit part of the loss is water, so the factor may come out high.",
+      kDefault: "Now {k} by default: watches usually overestimate. Once 4 weeks hold {w0} weigh-ins and {d0} days with logs and COROS (now {w} and {d}), the factor is fitted from your weight trend.",
+      targH: "Targets by day type", targSuggested: "Suggested from your profile and current weight. Change any number and save to keep your own.",
+      targCustom: "Your own targets. “Use suggested” goes back to values calculated from your profile.",
+      targHint: "If the 7-day average weight drops less than 0.3 kg a week for 3 weeks in a row, take 150–200 kcal off the easy days. If it drops more than 0.8 kg, or training feels hard, add 200.",
+      saveSettings: "Save settings", resetTargets: "Use suggested targets",
+      setSaved: "Settings saved.", setBad: "Check the settings: every target must be a number.",
+      profBad: "Check the profile: age 14–100, height 120–230 cm, weights 30–250 kg.",
+      kBad: "The factor is a number from 0.3 to 1.5, or leave the field empty.",
+      stNoClaude: "Storage unavailable: open this page in Claude so entries are saved.",
+      stNoDb: "Storage isn't available in this view. Entries won't be saved.",
+      stSignIn: "Sign in to Claude to see and save your entries.",
+      stLoading: "Loading entries…", stSlow: "Entries haven't loaded yet. Check the connection: the page keeps trying.",
+      stRevoked: "Access to entries is closed.", stLoadFail: "Couldn't load entries. Open the page later.",
+      stNoWrite: "Storage unavailable, the entry won't be saved.",
+      stFull: "Storage is full, the entry wasn't saved.", stNoPerm: "Not saved: this view can't write.", stFail: "Not saved. Try again.",
+      cNeedsReauth: "Reconnect COROS: Claude settings → Connectors.",
+      cNotConnected: "COROS isn't connected: add it in Claude settings → Connectors.",
+      cSelect: "Several COROS connectors: pick one when Claude asks.",
+      cApproval: "The page needs your permission to read COROS.",
+      cOff: "Reading COROS is turned off for this page.", cPolicy: "Reading COROS is blocked by your organization.",
+      cUnavailable: "COROS isn't available in this view; showing saved data.",
+      cDown: "COROS isn't responding; showing the last data.",
+      cToolErr: "COROS returned an error: {m}", cParse: "COROS answered, but the data couldn't be read.", cFail: "Couldn't get COROS data."
+    },
+    ru: {
+      title: "Питание, вес и расход",
+      goal: "Цель: {s} → {g} кг", goalNone: "Укажи стартовый и целевой вес в настройках",
+      progressNone: "Впиши вес утром, чтобы видеть прогресс",
+      progressNow: "Сейчас {w} кг ({src}), {delta} из {total} кг", src7: "в среднем за 7 дней", srcLast: "последнее взвешивание",
+      lost: "сброшено {x}", gained: "плюс {x}",
+      onbText: "Привет! Начни с профиля в настройках внизу страницы: пол, возраст, рост и вес. От них считаются цели на день и расход.",
+      onbBtn: "Открыть настройки",
+      prevDay: "Предыдущий день", nextDay: "Следующий день", backToday: "Вернуться к сегодня", dayType: "Тип дня",
+      typePick: "Выбери тип дня. Пока цель считается как для обычного.",
+      kcal: "ккал", left: "Осталось {n} ккал", over: "Сверх цели на {n} ккал",
+      burn: "Расход", balance: "Баланс", burnParts: "база {b} + часы {a} × {k}",
+      dayRunning: "день идёт", corosAt: "COROS на {t}",
+      corosNoDay: "Нет данных COROS за этот день.", corosNotYet: "COROS пока не отдал данные за этот день.",
+      corosBtn: "Разрешить чтение COROS",
+      barKcal: "Ккал", barP: "Белок", barF: "Жиры", barC: "Углеводы", g: "г",
+      weightLbl: "Вес утром, кг", weightPh: "например, 94,6", save: "Сохранить", weightBad: "Вес должен быть числом, например 94,6.",
+      foodH: "Еда за день", mealsEmpty: "Пока пусто. Пришли фото еды в чат или добавь вручную.",
+      edit: "Изменить", del: "Удалить", delSure: "Точно удалить?", mealFallback: "Приём пищи",
+      addManual: "Добавить вручную", editEntry: "Изменить запись",
+      mealLbl: "Приём пищи", timeLbl: "Время", whatLbl: "Что съел", whatPh: "рис 200 г, курица 150 г",
+      kcalLbl: "Ккал", pLbl: "Белок, г", fLbl: "Жиры, г", cLbl: "Углев., г", autoPh: "авто",
+      autoHint: "Если ккал не указаны, посчитаю из БЖУ: 4 × белок + 9 × жиры + 4 × углеводы.",
+      add: "Добавить", saveChanges: "Сохранить изменения", cancel: "Отменить", needKcal: "Укажи калории или хотя бы БЖУ.",
+      dayHint: "Фото еды присылай в чат: Claude оценит и запишет сюда. Оценка по фото даёт ±25% на тарелку. День заканчивается со сном: еда до {h} идёт в предыдущий день. Расход берётся из COROS с поправкой (см. настройки).",
+      weekH: "Последние 7 дней",
+      tAvgK: "Съедено в среднем", tAvgKs: "цель {t} · дней: {n}", noLogs: "нет записей",
+      tBal: "Баланс за неделю", tBalS: "≈ {kg} кг · дней: {n}", tBalNone: "нужны записи и COROS",
+      tAvgW: "Вес в среднем", tAvgWs: "взвешиваний: {n}", noWeigh: "нет взвешиваний",
+      tDelta: "К прошлой неделе", tDeltaS: "кг за неделю", tDeltaNone: "нужны 2 недели взвешиваний",
+      thDay: "День", thType: "Тип", thKcal: "Ккал / цель", thBal: "Баланс", thP: "Б, г", thF: "Ж, г", thC: "У, г", thW: "Вес", thEat: "Съедено", thBurn: "Расход",
+      legOk: "±7% от цели", legOver: "выше цели", legLow: "меньше 80%: записано не всё?",
+      balHint: "Баланс = съедено − расход: минус значит дефицит. 7700 ккал дефицита ≈ 1 кг жира. Сегодняшний баланс серым: день ещё идёт.",
+      ebH: "Съедено и расход за 14 дней", keyEat: "Съедено", keyBurn: "Расход: COROS с поправкой",
+      ebTable: "Таблицей", ebHint: "Нажми на день, чтобы открыть его выше. Пустой кружок — сегодня: часы ещё досчитывают, а еда, может, не вся записана.",
+      ebEmpty: "Пока нет ни записей, ни данных COROS за последние 14 дней.", ebAria: "Съедено и расход по дням за 14 дней; подробности в таблице ниже",
+      ebEaten: "съедено", ebBurn: "расход", ebBal: "баланс", ebRunning: "(день идёт)",
+      wH: "Вес", wEmpty: "Взвешивайся утром натощак и вписывай вес. Здесь появятся точки и среднее за 7 дней.",
+      wHint: "Точки — утренние взвешивания, линия — среднее за 7 дней. Смотри на линию: дневной вес скачет на 0,5–1,5 кг от воды и соли.",
+      wReadout: "{d}: {w} кг, среднее за 7 дней {a}", goalShort: "цель", wAria: "Утренний вес и среднее за 7 дней",
+      setH: "Настройки и цели", profH: "Профиль",
+      sexLbl: "Пол", male: "Мужской", female: "Женский", ageLbl: "Возраст", heightLbl: "Рост, см",
+      startLbl: "Старт, кг", goalLblW: "Цель, кг", noteLbl: "Подпись к цели (необязательно)", notePh: "например, Rinjani 100, май 2027",
+      cutLbl: "День заканчивается в", cutMidnight: "00:00 (полночь)",
+      cutHint: "Еда после полуночи и до этого часа идёт в предыдущий день, чтобы перекус перед сном оставался в своём дне.",
+      burnH: "Расход", kLbl: "Коэфф. к часам",
+      kBase: "Расход = базовый обмен (формула Миффлина — Сан Жеора, от веса) + активные калории COROS × коэффициент. ",
+      kManual: "Сейчас {k}, задан вручную. Очисти поле, чтобы коэффициент подбирался по весу.",
+      kWeight: "Сейчас {k}: подобран по тренду веса и записям за {n} дн., реальный расход ≈ {tdee} ккал в день. В первые 2 недели дефицита часть потери — вода, коэффициент может выйти завышенным.",
+      kDefault: "Сейчас {k} по умолчанию: часы обычно завышают. Когда за 4 недели наберётся {w0} взвешиваний и {d0} дней с записями и COROS (сейчас {w} и {d}), коэффициент подстроится по тренду веса.",
+      targH: "Цели по типам дней", targSuggested: "Посчитаны по профилю и текущему весу. Измени любое число и сохрани, чтобы оставить свои.",
+      targCustom: "Твои цели. «Взять рассчитанные» вернёт значения по профилю.",
+      targHint: "Если 3 недели подряд средний вес падает меньше чем на 0,3 кг в неделю, убери 150–200 ккал у обычных дней. Если больше 0,8 кг или тренировки идут тяжело, добавь 200.",
+      saveSettings: "Сохранить настройки", resetTargets: "Взять рассчитанные цели",
+      setSaved: "Настройки сохранены.", setBad: "Проверь цели: везде должны быть числа.",
+      profBad: "Проверь профиль: возраст 14–100, рост 120–230 см, вес 30–250 кг.",
+      kBad: "Коэффициент — число от 0,3 до 1,5, или оставь поле пустым.",
+      stNoClaude: "Хранилище недоступно: открой страницу в Claude, чтобы записи сохранялись.",
+      stNoDb: "Хранилище недоступно в этом просмотре. Записи не сохранятся.",
+      stSignIn: "Войди в аккаунт Claude, чтобы видеть и сохранять свои записи.",
+      stLoading: "Загружаю записи…", stSlow: "Записи пока не загрузились. Проверь связь: страница продолжает пробовать сама.",
+      stRevoked: "Доступ к записям закрыт.", stLoadFail: "Не удалось загрузить записи. Открой страницу позже.",
+      stNoWrite: "Хранилище недоступно, запись не сохранится.",
+      stFull: "Хранилище заполнено, запись не сохранилась.", stNoPerm: "Запись не сохранилась: нет прав на запись в этом просмотре.", stFail: "Запись не сохранилась. Попробуй ещё раз.",
+      cNeedsReauth: "COROS надо переподключить: настройки Claude → Connectors.",
+      cNotConnected: "COROS не подключён: добавь его в настройках Claude → Connectors.",
+      cSelect: "Подключено несколько COROS: выбери один в запросе Claude.",
+      cApproval: "Странице нужно разрешение читать COROS.",
+      cOff: "Чтение COROS для этой страницы выключено.", cPolicy: "Чтение COROS запрещено настройками организации.",
+      cUnavailable: "В этом просмотре COROS недоступен, показываю сохранённые данные.",
+      cDown: "COROS сейчас не отвечает, показываю последние данные.",
+      cToolErr: "COROS вернул ошибку: {m}", cParse: "COROS ответил, но данные не разобрались.", cFail: "Не удалось получить данные COROS."
+    }
+  };
+  var TYPE_TEXT = {
+    en: {
+      label: { rest: "Rest", regular: "Easy", key: "Key", maint: "No deficit", carb: "Carb load" },
+      short: { rest: "Rest", regular: "Easy", key: "Key", maint: "No def.", carb: "Carb" },
+      hint: {
+        rest: "No training.",
+        regular: "Easy run up to 1.5 hours.",
+        key: "Intervals, long run or big climbing. Fuel taken during the session comes on top of the target.",
+        maint: "Taper, race or recovery: eat roughly what you burn.",
+        carb: "1–2 days before a race: 7–8 g of carbs per kg (rice, noodles, bread, fruit, sweet drinks), little fat and fibre."
+      }
+    },
+    ru: {
+      label: { rest: "Отдых", regular: "Обычная", key: "Ключевая", maint: "Без дефицита", carb: "Углеводная загрузка" },
+      short: { rest: "Отдых", regular: "Обычн.", key: "Ключ.", maint: "Без деф.", carb: "Загрузка" },
+      hint: {
+        rest: "День без тренировки.",
+        regular: "Пробежка до 1,5 часа в лёгком темпе.",
+        key: "Интервалы, длинная или большой набор. Питание во время тренировки идёт сверх цели.",
+        maint: "Подводка, гонка или восстановление: ешь примерно на расход.",
+        carb: "1–2 дня перед гонкой: 7–8 г углеводов на кг (рис, лапша, хлеб, фрукты, сладкие напитки), мало жира и клетчатки."
+      }
+    }
+  };
+  // Meals and sources are stored as keys; older entries may hold Russian or English words.
+  var MEAL_KEYS = ["breakfast", "lunch", "dinner", "snack", "workout"];
+  var MEAL_TEXT = {
+    en: { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snack: "Snack", workout: "During training" },
+    ru: { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус", workout: "На тренировке" }
+  };
+  var SRC_TEXT = {
+    en: { photo: "photo", label: "label", said: "described", manual: "manual" },
+    ru: { photo: "фото", label: "этикетка", said: "со слов", manual: "вручную" }
+  };
+  function keyOf(map, v) {
+    v = String(v || "");
+    if (map.en[v] !== undefined || map.ru[v] !== undefined) return v;
+    var found = null;
+    ["en", "ru"].forEach(function (lg) {
+      Object.keys(map[lg]).forEach(function (k) { if (!found && map[lg][k].toLowerCase() === v.toLowerCase()) found = k; });
+    });
+    return found;
+  }
+
+  var state = {
+    lang: "en", col: null, docs: new Map(), selected: null, editing: null, loaded: false, settingsDirty: false,
+    mcp: null, coros: new Map(), corosAt: null, corosErr: null, corosAsk: false, syncing: new Map()
+  };
+  try { var savedLang = window.localStorage.getItem("nutrition-log-lang"); if (savedLang === "ru" || savedLang === "en") state.lang = savedLang; } catch (e) {}
+
+  function t(key, vars) {
+    var s = (STR[state.lang] && STR[state.lang][key]);
+    if (s === undefined) s = STR.en[key];
+    if (s === undefined) s = key;
+    if (vars) s = s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] !== undefined ? String(vars[k]) : m; });
+    return s;
+  }
+  function typeLabel(k) { return TYPE_TEXT[state.lang].label[k]; }
+  function typeShort(k) { return TYPE_TEXT[state.lang].short[k]; }
+  function typeHint(k) { return TYPE_TEXT[state.lang].hint[k]; }
+
+  // ---------- constants ----------
+  var TYPES = ["rest", "regular", "key", "maint", "carb"];
+  var DAY = 864e5;
+  var PROFILE_DEFAULTS = { sex: "male", age: 35, height: 175, weight: 75 };
+  var DEFAULT_CUTOFF = 5;
+  // Burn = Mifflin–St Jeor base + COROS active calories × k. k starts at 0.85 (wrist estimates
+  // run high) and is refit from the weight trend once there are enough weigh-ins and logged days.
+  var DEFAULT_K = 0.85;
+  var KCAL_PER_KG = 7700;
+  var CAL_WINDOW = 28, CAL_MIN_DAYS = 14, CAL_MIN_WEIGHTS = 10;
+  var COROS = "COROS", COROS_TOOL = "queryDailyHealthData", COROS_INPUT = { days: 14 };
+  var COROS_CACHE = { staleTime: 10 * 60 * 1000, gcTime: 7 * DAY };
+
+  // ---------- helpers ----------
+  function $(s) { return document.querySelector(s); }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  var F = {};
+  function buildFormats() {
+    var loc = state.lang === "ru" ? "ru-RU" : "en-US";
+    F.n0 = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
+    F.n1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    F.n2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    F.plain = new Intl.NumberFormat(loc, { maximumFractionDigits: 0, useGrouping: false });
+    F.day = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: "short" });
+    F.row = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: "numeric" });
+    F.long = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long" });
+    F.time = new Intl.DateTimeFormat(loc, { hour: "2-digit", minute: "2-digit" });
+  }
+  function fmt(n) { return F.n0.format(Math.round(n)); }
+  function fmt1(n) { return F.n1.format(n); }
+  function trim1(n) { return F.n1.format(n).replace(/[.,]0$/, ""); }
+  function signedPlain(n) { var r = Math.round(n); return (r > 0 ? "+" : r < 0 ? "−" : "") + F.plain.format(Math.abs(r)); }
+  function signed(n) { var r = Math.round(n); return (r > 0 ? "+" : r < 0 ? "−" : "") + F.n0.format(Math.abs(r)); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function iso(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function parseIso(s) { var a = String(s).split("-").map(Number); return new Date(a[0], a[1] - 1, a[2]); }
+  function addDays(s, n) { var d = parseIso(s); d.setDate(d.getDate() + n); return iso(d); }
+  function cutoff() { var c = (state.docs.get("settings") || {}).dayCutoff; return typeof c === "number" && c >= 0 && c <= 8 ? c : DEFAULT_CUTOFF; }
+  // The day ends when you go to sleep: before the cutoff hour still counts as the previous day.
+  function today() { var d = new Date(); if (d.getHours() < cutoff()) d.setDate(d.getDate() - 1); return iso(d); }
+  function sortKey(tm) { tm = String(tm || ""); if (!/^\d{2}:\d{2}/.test(tm)) return "99:99"; var h = Number(tm.slice(0, 2)); return h < cutoff() ? String(h + 24) + tm.slice(2) : tm; }
+  function num(v) {
+    if (v === null || v === undefined) return NaN;
+    var s = String(v).replace(",", ".").trim();
+    if (s === "") return NaN;
+    return Number(s);
+  }
+  function finite(v) { return typeof v === "number" && isFinite(v); }
+  function isDate(s) { return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+  function round(v, step) { return Math.round(v / step) * step; }
+
+  function setStatus(text, kind) {
+    var s = $("#status");
+    s.textContent = text || "";
+    s.className = "status" + (kind ? " " + kind : "");
+  }
+
+  // ---------- derived data ----------
+  function rawSettings() { return state.docs.get("settings") || {}; }
+  function profileComplete() {
+    var s = rawSettings();
+    return (s.sex === "male" || s.sex === "female") && finite(s.age) && finite(s.height);
+  }
+  function profile() {
+    var s = rawSettings();
+    return {
+      sex: s.sex === "female" ? "female" : s.sex === "male" ? "male" : PROFILE_DEFAULTS.sex,
+      age: finite(s.age) ? s.age : PROFILE_DEFAULTS.age,
+      height: finite(s.height) ? s.height : PROFILE_DEFAULTS.height
+    };
+  }
+  function dayDoc(date) { return state.docs.get("day-" + date) || null; }
+  function dayType(date) { var d = dayDoc(date); return d && TYPES.indexOf(d.type) >= 0 ? d.type : null; }
+  function mealsOn(date) {
+    var out = [];
+    state.docs.forEach(function (d, id) {
+      if (d && d.kind === "meal" && d.date === date) out.push({ id: id, d: d });
+    });
+    out.sort(function (a, b) {
+      var ta = sortKey(a.d.time), tb = sortKey(b.d.time);
+      if (ta !== tb) return ta < tb ? -1 : 1;
+      return (Number(a.d.createdAt) || 0) - (Number(b.d.createdAt) || 0);
+    });
+    return out;
+  }
+  function totals(meals) {
+    var tt = { kcal: 0, p: 0, f: 0, c: 0 };
+    meals.forEach(function (m) {
+      ["kcal", "p", "f", "c"].forEach(function (k) { var v = Number(m.d[k]); if (isFinite(v)) tt[k] += v; });
+    });
+    return tt;
+  }
+  function weights() {
+    var out = [];
+    state.docs.forEach(function (d) {
+      if (d && d.kind === "day" && isDate(d.date) && finite(d.weight)) out.push({ date: d.date, w: d.weight });
+    });
+    out.sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+    return out;
+  }
+  function avgWeight(endDate, days) {
+    var start = addDays(endDate, -(days - 1));
+    var ws = weights().filter(function (x) { return x.date >= start && x.date <= endDate; });
+    if (!ws.length) return null;
+    return { avg: ws.reduce(function (s, x) { return s + x.w; }, 0) / ws.length, n: ws.length };
+  }
+  function weightNear(date) {
+    var a = avgWeight(date, 7);
+    if (a) return a.avg;
+    var ws = weights(), before = ws.filter(function (x) { return x.date <= date; });
+    if (before.length) return before[before.length - 1].w;
+    if (ws.length) return ws[0].w;
+    var s = rawSettings();
+    return finite(s.startWeight) ? s.startWeight : PROFILE_DEFAULTS.weight;
+  }
+  function bmrOn(date) {
+    var p = profile();
+    return 10 * weightNear(date) + 6.25 * p.height - 5 * p.age + (p.sex === "female" ? -161 : 5);
+  }
+
+  // Targets suggested from the profile: base = BMR × 1.25, scaled per day type (rest never below BMR);
+  // protein and fat per kg of body weight; carbs fill the rest.
+  function suggestedTargets() {
+    var date = today(), w = weightNear(date), bmr = bmrOn(date), base = bmr * 1.25;
+    var spec = {
+      rest:    { kcal: Math.max(bmr, base * 0.82), p: 1.8, f: 0.70 },
+      regular: { kcal: base * 1.04, p: 1.8, f: 0.75 },
+      key:     { kcal: base * 1.38, p: 1.8, f: 0.80 },
+      maint:   { kcal: bmr * 1.45, p: 1.7, f: 0.85 }
+    };
+    var out = {};
+    Object.keys(spec).forEach(function (k) {
+      var kcal = round(spec[k].kcal, 50), p = round(spec[k].p * w, 5), f = round(spec[k].f * w, 5);
+      out[k] = { kcal: kcal, p: p, f: f, c: Math.max(0, round((kcal - 4 * p - 9 * f) / 4, 5)) };
+    });
+    var cp = round(1.4 * w, 5), cf = round(0.55 * w, 5), cc = round(7 * w, 5);
+    out.carb = { kcal: round(4 * cc + 4 * cp + 9 * cf, 50), p: cp, f: cf, c: cc };
+    return out;
+  }
+  function settings() {
+    var s = rawSettings();
+    var custom = (s.targets && typeof s.targets === "object") ? s.targets : {};
+    var sug = suggestedTargets(), tg = {}, anyCustom = false;
+    TYPES.forEach(function (k) {
+      var o = custom[k];
+      if (o && finite(o.kcal)) {
+        anyCustom = true;
+        tg[k] = { kcal: o.kcal, p: finite(o.p) ? o.p : sug[k].p, f: finite(o.f) ? o.f : sug[k].f, c: finite(o.c) ? o.c : sug[k].c };
+      } else {
+        tg[k] = sug[k];
+      }
+    });
+    return {
+      targets: tg, customTargets: anyCustom,
+      startWeight: finite(s.startWeight) ? s.startWeight : null,
+      goalWeight: finite(s.goalWeight) ? s.goalWeight : null,
+      goalNote: typeof s.goalNote === "string" ? s.goalNote : "",
+      burnK: finite(s.burnK) ? s.burnK : null
+    };
+  }
+
+  // ---------- burn ----------
+  function activeOn(date) {
+    if (state.coros.has(date)) return state.coros.get(date);
+    var d = dayDoc(date);
+    return d && finite(d.active) ? d.active : null;
+  }
+  function slopePerDay(ws) {
+    var xs = ws.map(function (x) { return parseIso(x.date).getTime() / DAY; });
+    var mx = xs.reduce(function (s, v) { return s + v; }, 0) / xs.length;
+    var my = ws.reduce(function (s, x) { return s + x.w; }, 0) / ws.length;
+    var nn = 0, dd = 0;
+    xs.forEach(function (x, i) { nn += (x - mx) * (ws[i].w - my); dd += (x - mx) * (x - mx); });
+    return dd > 0 ? nn / dd : 0;
+  }
+  // Fit k so that logged intake minus the weight trend matches base + k × COROS active.
+  function calibration() {
+    var s = settings();
+    if (s.burnK !== null) return { k: s.burnK, src: "manual" };
+    var end = addDays(today(), -1), start = addDays(end, -(CAL_WINDOW - 1));
+    var ws = weights().filter(function (x) { return x.date >= start && x.date <= end; });
+    var days = [];
+    for (var i = 0; i < CAL_WINDOW; i++) {
+      var d = addDays(start, i), meals = mealsOn(d), a = activeOn(d);
+      if (meals.length && a !== null) days.push({ eat: totals(meals).kcal, a: a, b: bmrOn(d) });
+    }
+    var span = ws.length ? (parseIso(ws[ws.length - 1].date) - parseIso(ws[0].date)) / DAY : 0;
+    var need = { days: days.length, weights: ws.length };
+    if (days.length < CAL_MIN_DAYS || ws.length < CAL_MIN_WEIGHTS || span < CAL_MIN_DAYS - 1) {
+      return { k: DEFAULT_K, src: "default", need: need };
+    }
+    function avg(f) { return days.reduce(function (tt, x) { return tt + x[f]; }, 0) / days.length; }
+    var eat = avg("eat"), act = avg("a"), base = avg("b");
+    if (act < 150) return { k: DEFAULT_K, src: "default", need: need };
+    var tdee = eat - slopePerDay(ws) * KCAL_PER_KG;
+    var k = Math.max(0.5, Math.min(1.3, (tdee - base) / act));
+    return { k: Math.round(k * 100) / 100, src: "weight", n: days.length, tdee: tdee };
+  }
+  function burnOn(date, cal) {
+    var a = activeOn(date);
+    if (a === null) return null;
+    var b = bmrOn(date);
+    return { total: b + cal.k * a, bmr: b, active: a };
+  }
+
+  // ---------- writes ----------
+  var chains = new Map();
+  function requireDb() {
+    if (!state.col) { setStatus(t("stNoWrite"), "bad"); return false; }
+    return true;
+  }
+  function write(id, fn) {
+    var prev = chains.get(id) || Promise.resolve();
+    var p = prev.catch(function () {}).then(function () { return fn(state.col.doc(id)); });
+    chains.set(id, p);
+    return p.then(function () {}, function (e) {
+      var code = e && e.code;
+      if (code === "quota_exceeded") setStatus(t("stFull"), "bad");
+      else if (code === "invalid_argument") setStatus(t("stNoPerm"), "bad");
+      else setStatus(t("stFail"), "bad");
+      throw e;
+    });
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o || {})); }
+
+  function setDayType(type) {
+    if (!requireDb()) return;
+    var date = state.selected;
+    write("day-" + date, function (ref) {
+      var data = clone(dayDoc(date));
+      data.kind = "day"; data.date = date; data.type = type;
+      return ref.set(data);
+    }).catch(function () {});
+  }
+  function saveWeight(raw) {
+    if (!requireDb()) return;
+    var date = state.selected, v = null;
+    if (String(raw).trim() !== "") {
+      v = num(raw);
+      if (!isFinite(v) || v < 30 || v > 250) { setStatus(t("weightBad"), "warn"); return; }
+      v = Math.round(v * 10) / 10;
+    }
+    write("day-" + date, function (ref) {
+      var data = clone(dayDoc(date));
+      data.kind = "day"; data.date = date;
+      if (v === null) delete data.weight; else data.weight = v;
+      return ref.set(data);
+    }).then(function () { setStatus(""); $("#weightInput").blur(); }, function () {});
+  }
+  function saveLang(lang) {
+    if (!state.col || !state.loaded) return;
+    if (rawSettings().lang === lang) return;
+    write("settings", function (ref) {
+      var data = clone(state.docs.get("settings"));
+      data.lang = lang;
+      return ref.set(data);
+    }).catch(function () {});
+  }
+
+  // ---------- rendering ----------
+  function applyStatic() {
+    document.documentElement.lang = state.lang;
+    document.querySelectorAll("[data-i18n]").forEach(function (n) { n.textContent = t(n.getAttribute("data-i18n")); });
+    document.querySelectorAll("[data-i18n-ph]").forEach(function (n) { n.setAttribute("placeholder", t(n.getAttribute("data-i18n-ph"))); });
+    document.querySelectorAll("[data-i18n-aria]").forEach(function (n) { n.setAttribute("aria-label", t(n.getAttribute("data-i18n-aria"))); });
+    document.querySelectorAll(".lang button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-lang") === state.lang)); });
+    var cut = $("#sCut"), cur = cut.value;
+    cut.textContent = "";
+    for (var h = 0; h <= 8; h++) {
+      var o = el("option", "", h === 0 ? t("cutMidnight") : String(h).padStart(2, "0") + ":00");
+      o.value = String(h);
+      cut.appendChild(o);
+    }
+    cut.value = cur || String(cutoff());
+    fillTitles();
+  }
+
+  function renderHeader() {
+    var s = settings();
+    var line = s.startWeight !== null && s.goalWeight !== null ? t("goal", { s: trim1(s.startWeight), g: trim1(s.goalWeight) }) : t("goalNone");
+    if (s.goalNote) line += " · " + s.goalNote;
+    $("#goalLine").textContent = line;
+    $("#onb").hidden = !state.loaded || profileComplete();
+    var a = avgWeight(today(), 7);
+    var ws = weights();
+    var cur = a ? a.avg : (ws.length ? ws[ws.length - 1].w : null);
+    var total = s.startWeight !== null && s.goalWeight !== null ? s.startWeight - s.goalWeight : 0;
+    if (cur === null || total <= 0) {
+      $("#goalFill").style.width = "0%";
+      $("#goalText").textContent = t("progressNone");
+      return;
+    }
+    var lost = s.startWeight - cur;
+    var pct = Math.max(0, Math.min(1, lost / total));
+    $("#goalFill").style.width = (pct * 100) + "%";
+    $("#goalText").textContent = t("progressNow", {
+      w: fmt1(cur), src: a ? t("src7") : t("srcLast"),
+      delta: lost >= 0 ? t("lost", { x: fmt1(lost) }) : t("gained", { x: fmt1(-lost) }),
+      total: trim1(total)
+    });
+  }
+
+  function renderBars(tt, tgt) {
+    var rows = [[t("barKcal"), "kcal", "", tgt.kcal], [t("barP"), "p", t("g"), tgt.p], [t("barF"), "f", t("g"), tgt.f], [t("barC"), "c", t("g"), tgt.c]];
+    var box = $("#bars");
+    box.textContent = "";
+    rows.forEach(function (r) {
+      var eaten = tt[r[1]], target = r[3];
+      var ratio = target > 0 ? eaten / target : 0;
+      var row = el("div", "bar");
+      var tr = el("div", "track");
+      var fill = el("div", "fill");
+      fill.style.width = (Math.min(ratio, 1) * 100) + "%";
+      if (r[1] === "p" && ratio >= 0.95) fill.classList.add("ok");
+      if (r[1] !== "p" && ratio > 1.05) fill.classList.add("over");
+      tr.appendChild(fill);
+      row.appendChild(el("span", "bar-l", r[0]));
+      row.appendChild(tr);
+      row.appendChild(el("span", "bar-v num", fmt(eaten) + " / " + fmt(target) + (r[2] ? " " + r[2] : "")));
+      box.appendChild(row);
+    });
+  }
+
+  function renderBurn(date, eaten) {
+    var cal = calibration(), b = burnOn(date, cal), isToday = date === today();
+    var lines = [];
+    if (b) {
+      $("#burnTotal").textContent = "≈ " + fmt(b.total) + " " + t("kcal");
+      $("#burnBal").textContent = signed(eaten - b.total) + " " + t("kcal");
+      lines.push(t("burnParts", { b: fmt(b.bmr), a: fmt(b.active), k: F.n2.format(cal.k) }));
+      if (isToday) lines.push(t("dayRunning") + (state.corosAt ? ", " + t("corosAt", { t: F.time.format(new Date(state.corosAt)) }) : ""));
+      if (isToday && state.corosErr) lines.push(corosMsg());
+    } else {
+      $("#burnTotal").textContent = "—";
+      $("#burnBal").textContent = "—";
+      lines.push(state.corosErr ? corosMsg() : state.mcp ? t("corosNotYet") : t("corosNoDay"));
+    }
+    $("#burnHint").textContent = lines.join(" · ");
+    $("#corosAct").hidden = !state.corosAsk;
+  }
+
+  function mealTitle(d) {
+    var k = keyOf(MEAL_TEXT, d.title);
+    return k ? MEAL_TEXT[state.lang][k] : String(d.title || t("mealFallback"));
+  }
+  function srcTitle(v) {
+    var k = keyOf(SRC_TEXT, v);
+    return k ? SRC_TEXT[state.lang][k] : String(v);
+  }
+
+  var pendingDelete = null, deleteTimer = null;
+  function renderMeals(meals) {
+    var box = $("#meals");
+    box.textContent = "";
+    if (!meals.length) {
+      box.appendChild(el("p", "empty", t("mealsEmpty")));
+      return;
+    }
+    meals.forEach(function (m) {
+      var d = m.d;
+      var row = el("div", "meal");
+      var main = el("div", "meal-main");
+      var head = el("div", "meal-head");
+      if (d.time) head.appendChild(el("span", "meal-time num", String(d.time)));
+      head.appendChild(el("span", "meal-title", mealTitle(d)));
+      if (d.src) head.appendChild(el("span", "tag", srcTitle(d.src)));
+      main.appendChild(head);
+      if (d.desc) main.appendChild(el("div", "meal-desc", String(d.desc)));
+      if (d.note) main.appendChild(el("div", "meal-note", String(d.note)));
+      var mac = [];
+      var L = state.lang === "ru" ? ["Б", "Ж", "У"] : ["P", "F", "C"];
+      if (finite(d.p)) mac.push(L[0] + " " + fmt(d.p));
+      if (finite(d.f)) mac.push(L[1] + " " + fmt(d.f));
+      if (finite(d.c)) mac.push(L[2] + " " + fmt(d.c));
+      if (mac.length) main.appendChild(el("div", "meal-macros num", mac.join(" · ")));
+      var side = el("div", "meal-side");
+      side.appendChild(el("div", "meal-kcal num", finite(d.kcal) ? fmt(d.kcal) : "—"));
+      var acts = el("div", "meal-actions");
+      var edit = el("button", "link", t("edit"));
+      edit.type = "button";
+      edit.addEventListener("click", function () { startEdit(m.id); });
+      var del = el("button", "link danger", pendingDelete === m.id ? t("delSure") : t("del"));
+      del.type = "button";
+      del.addEventListener("click", function () { askDelete(m.id); });
+      acts.appendChild(edit); acts.appendChild(del);
+      side.appendChild(acts);
+      row.appendChild(main); row.appendChild(side);
+      box.appendChild(row);
+    });
+  }
+  function askDelete(id) {
+    if (pendingDelete === id) {
+      pendingDelete = null;
+      clearTimeout(deleteTimer);
+      if (!requireDb()) return;
+      write(id, function (ref) { return ref.delete(); }).catch(function () {});
+      if (state.editing === id) resetForm();
+      return;
+    }
+    pendingDelete = id;
+    clearTimeout(deleteTimer);
+    deleteTimer = setTimeout(function () { pendingDelete = null; renderDay(); }, 4000);
+    renderDay();
+  }
+
+  function renderDay() {
+    var date = state.selected, s = settings();
+    var type = dayType(date);
+    var tgt = s.targets[type || "regular"];
+    $("#dayLabel").textContent = cap(F.long.format(parseIso(date)));
+    $("#todayWrap").hidden = date === today();
+
+    var chips = $("#typeChips");
+    chips.textContent = "";
+    TYPES.forEach(function (k) {
+      var b = el("button", "chip");
+      b.type = "button";
+      b.setAttribute("aria-pressed", String(k === type));
+      b.appendChild(document.createTextNode(typeLabel(k) + " "));
+      b.appendChild(el("span", "num", fmt(s.targets[k].kcal)));
+      b.addEventListener("click", function () { setDayType(k); });
+      chips.appendChild(b);
+    });
+    $("#typeHint").textContent = type ? typeHint(type) : t("typePick");
+
+    var meals = mealsOn(date), tt = totals(meals);
+    $("#kcalEaten").textContent = fmt(tt.kcal);
+    $("#kcalTarget").textContent = fmt(tgt.kcal);
+    var left = tgt.kcal - tt.kcal;
+    var lp = $("#kcalLeft");
+    lp.textContent = left >= 0 ? t("left", { n: fmt(left) }) : t("over", { n: fmt(-left) });
+    lp.className = "left" + (left < 0 ? " over" : "");
+    renderBars(tt, tgt);
+    renderBurn(date, tt.kcal);
+
+    var wi = $("#weightInput");
+    if (document.activeElement !== wi) {
+      var dd = dayDoc(date);
+      wi.value = dd && finite(dd.weight) ? fmt1(dd.weight) : "";
+    }
+    renderMeals(meals);
+    var c = cutoff();
+    $("#dayHint").textContent = t("dayHint", { h: c === 0 ? "00:00" : String(c).padStart(2, "0") + ":00" });
+    if (!state.editing) {
+      $("#mSave").textContent = t("add");
+      $("#mealSummary").textContent = t("addManual");
+    } else {
+      $("#mSave").textContent = t("saveChanges");
+      $("#mealSummary").textContent = t("editEntry");
+    }
+  }
+
+  function renderWeek() {
+    var end = state.selected, s = settings(), cal = calibration(), now = today();
+    var body = $("#weekBody");
+    body.textContent = "";
+    var sumK = 0, sumT = 0, nK = 0, sumB = 0, nB = 0;
+    for (var i = 6; i >= 0; i--) {
+      (function (date) {
+        var type = dayType(date);
+        var tgt = s.targets[type || "regular"];
+        var meals = mealsOn(date), tt = totals(meals);
+        var dd = dayDoc(date);
+        var tr = el("tr");
+        if (date === state.selected) tr.className = "sel";
+        tr.tabIndex = 0;
+        tr.appendChild(el("td", "", F.row.format(parseIso(date))));
+        tr.appendChild(el("td", "", type ? typeShort(type) : "—"));
+        var kc = el("td", "r num");
+        if (meals.length) {
+          var ratio = tt.kcal / tgt.kcal;
+          var cls = ratio > 1.07 ? "over" : ratio < 0.8 ? "low" : "ok";
+          kc.appendChild(el("span", "dot " + cls));
+          kc.appendChild(document.createTextNode(F.plain.format(Math.round(tt.kcal)) + " / " + F.plain.format(Math.round(tgt.kcal))));
+          sumK += tt.kcal; sumT += tgt.kcal; nK++;
+        } else {
+          kc.textContent = "—";
+        }
+        tr.appendChild(kc);
+        var bc = el("td", "r num"), b = burnOn(date, cal);
+        if (meals.length && b && date <= now) {
+          var bal = tt.kcal - b.total;
+          bc.textContent = signedPlain(bal);
+          if (date === now) bc.classList.add("partial");
+          else { sumB += bal; nB++; }
+        } else {
+          bc.textContent = "—";
+        }
+        tr.appendChild(bc);
+        tr.appendChild(el("td", "r num", meals.length ? fmt(tt.p) : "—"));
+        tr.appendChild(el("td", "r num", dd && finite(dd.weight) ? fmt1(dd.weight) : "—"));
+        function pick() { state.selected = date; renderAll(); }
+        tr.addEventListener("click", pick);
+        tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+        body.appendChild(tr);
+      })(addDays(end, -i));
+    }
+    if (nK) {
+      $("#tAvgK").textContent = fmt(sumK / nK);
+      $("#tAvgKs").textContent = t("tAvgKs", { t: fmt(sumT / nK), n: nK });
+    } else {
+      $("#tAvgK").textContent = "—";
+      $("#tAvgKs").textContent = t("noLogs");
+    }
+    if (nB) {
+      $("#tBal").textContent = signed(sumB);
+      $("#tBalS").textContent = t("tBalS", { kg: (sumB < 0 ? "−" : "+") + fmt1(Math.abs(sumB) / KCAL_PER_KG), n: nB });
+    } else {
+      $("#tBal").textContent = "—";
+      $("#tBalS").textContent = t("tBalNone");
+    }
+    var a = avgWeight(end, 7), b7 = avgWeight(addDays(end, -7), 7);
+    $("#tAvgW").textContent = a ? fmt1(a.avg) : "—";
+    $("#tAvgWs").textContent = a ? t("tAvgWs", { n: a.n }) : t("noWeigh");
+    var dEl = $("#tDelta");
+    dEl.className = "tile-v";
+    if (a && b7) {
+      var delta = a.avg - b7.avg;
+      dEl.textContent = (delta > 0 ? "+" : delta < 0 ? "−" : "") + fmt1(Math.abs(delta));
+      if (delta <= -0.2) dEl.classList.add("good");
+      else if (delta > 0.2) dEl.classList.add("bad");
+      $("#tDeltaS").textContent = t("tDeltaS");
+    } else {
+      dEl.textContent = "—";
+      $("#tDeltaS").textContent = t("tDeltaNone");
+    }
+  }
+
+  // ---------- intake vs burn chart ----------
+  var EB_DAYS = 14;
+  var ebFocus = null;
+  function ebData() {
+    var cal = calibration(), now = today(), rows = [];
+    for (var i = EB_DAYS - 1; i >= 0; i--) {
+      var date = addDays(now, -i), meals = mealsOn(date), b = burnOn(date, cal);
+      rows.push({ date: date, eat: meals.length ? totals(meals).kcal : null, burn: b ? b.total : null, partial: date === now });
+    }
+    return rows;
+  }
+  function colPath(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h));
+    return "M" + x.toFixed(1) + " " + (y + h).toFixed(1) +
+      "V" + (y + r).toFixed(1) +
+      "A" + r + " " + r + " 0 0 1 " + (x + r).toFixed(1) + " " + y.toFixed(1) +
+      "H" + (x + w - r).toFixed(1) +
+      "A" + r + " " + r + " 0 0 1 " + (x + w).toFixed(1) + " " + (y + r).toFixed(1) +
+      "V" + (y + h).toFixed(1) + "Z";
+  }
+  function renderEB() {
+    var box = $("#ebChart"), ro = $("#ebReadout"), rows = ebData();
+    var body = $("#ebBody");
+    body.textContent = "";
+    rows.slice().reverse().forEach(function (r) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "", F.row.format(parseIso(r.date))));
+      tr.appendChild(el("td", "r num", r.eat !== null ? F.plain.format(Math.round(r.eat)) : "—"));
+      tr.appendChild(el("td", "r num", r.burn !== null ? F.plain.format(Math.round(r.burn)) : "—"));
+      var bal = r.eat !== null && r.burn !== null ? r.eat - r.burn : null;
+      tr.appendChild(el("td", "r num" + (r.partial ? " partial" : ""), bal === null ? "—" : signedPlain(bal)));
+      body.appendChild(tr);
+    });
+
+    var any = rows.some(function (r) { return r.eat !== null || r.burn !== null; });
+    if (!any) {
+      box.textContent = "";
+      box.appendChild(el("p", "empty", t("ebEmpty")));
+      ro.textContent = "";
+      return;
+    }
+    var W = Math.max(280, Math.round(box.clientWidth || 600)), H = 220;
+    var m = { l: 42, r: 8, t: 12, b: 24 };
+    var max = 0;
+    rows.forEach(function (r) { if (r.eat !== null) max = Math.max(max, r.eat); if (r.burn !== null) max = Math.max(max, r.burn); });
+    var step = max <= 4000 ? 1000 : max <= 10000 ? 2000 : 5000;
+    var yMax = Math.max(step, Math.ceil(max / step) * step);
+    var plotW = W - m.l - m.r, plotH = H - m.t - m.b;
+    var slot = plotW / rows.length;
+    var bw = Math.min(24, Math.max(6, slot * 0.56));
+    function cx(i) { return m.l + slot * (i + 0.5); }
+    function sy(v) { return m.t + (1 - v / yMax) * plotH; }
+
+    var g = "", selIdx = -1;
+    rows.forEach(function (r, i) { if (r.date === state.selected) selIdx = i; });
+    if (selIdx >= 0) g += '<rect class="sel-band" x="' + (m.l + slot * selIdx).toFixed(1) + '" y="' + m.t + '" width="' + slot.toFixed(1) + '" height="' + plotH + '" rx="4"/>';
+    for (var y = 0; y <= yMax; y += step) {
+      var yy = sy(y).toFixed(1);
+      g += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yy + '" y2="' + yy + '"/>';
+      g += '<text class="axis" x="' + (m.l - 6) + '" y="' + (Number(yy) + 4).toFixed(1) + '" text-anchor="end">' + fmt(y) + '</text>';
+    }
+    rows.forEach(function (r, i) {
+      if (r.eat === null || r.eat <= 0) return;
+      var top = sy(r.eat);
+      g += '<path class="eat' + (r.partial ? " dim" : "") + '" d="' + colPath(cx(i) - bw / 2, top, bw, sy(0) - top, 4) + '"/>';
+    });
+    var seg = "", segs = [];
+    rows.forEach(function (r, i) {
+      if (r.burn === null) { if (seg) segs.push(seg); seg = ""; return; }
+      seg += (seg ? "L" : "M") + cx(i).toFixed(1) + " " + sy(r.burn).toFixed(1) + " ";
+    });
+    if (seg) segs.push(seg);
+    segs.forEach(function (d) { g += '<path class="burn" d="' + d + '"/>'; });
+    rows.forEach(function (r, i) {
+      if (r.burn === null) return;
+      g += '<circle class="burn-pt' + (r.partial ? " partial" : "") + '" cx="' + cx(i).toFixed(1) + '" cy="' + sy(r.burn).toFixed(1) + '" r="4"/>';
+    });
+    var every = slot >= 20 ? 1 : 2;
+    rows.forEach(function (r, i) {
+      if ((rows.length - 1 - i) % every) return;
+      g += '<text class="xl' + (i === selIdx ? " sel" : "") + '" x="' + cx(i).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + parseIso(r.date).getDate() + '</text>';
+    });
+    g += '<line class="cursor" id="ebCursor" x1="0" x2="0" y1="' + m.t + '" y2="' + (m.t + plotH) + '" visibility="hidden"/>';
+    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" tabindex="0" role="img">' + g + '</svg>';
+
+    var svg = box.querySelector("svg"), cl = box.querySelector("#ebCursor");
+    svg.setAttribute("aria-label", t("ebAria"));
+    function show(i, cursor) {
+      ebFocus = i;
+      var r = rows[i];
+      ro.textContent = "";
+      ro.appendChild(document.createTextNode(cap(F.day.format(parseIso(r.date))) + ": " + t("ebEaten") + " "));
+      ro.appendChild(el("b", "", r.eat !== null ? fmt(r.eat) : "—"));
+      ro.appendChild(document.createTextNode(", " + t("ebBurn") + " "));
+      ro.appendChild(el("b", "", r.burn !== null ? "≈ " + fmt(r.burn) : "—"));
+      if (r.eat !== null && r.burn !== null) {
+        ro.appendChild(document.createTextNode(", " + t("ebBal") + " "));
+        ro.appendChild(el("b", "", signed(r.eat - r.burn) + " " + t("kcal")));
+        if (r.partial) ro.appendChild(document.createTextNode(" " + t("ebRunning")));
+      }
+      if (cursor) {
+        var x = cx(i).toFixed(1);
+        cl.setAttribute("x1", x); cl.setAttribute("x2", x); cl.setAttribute("visibility", "visible");
+      } else {
+        cl.setAttribute("visibility", "hidden");
+      }
+    }
+    var restIdx = selIdx >= 0 ? selIdx : rows.length - 1;
+    show(restIdx, false);
+    function idxAt(e) {
+      var r = svg.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width * W;
+      return Math.max(0, Math.min(rows.length - 1, Math.floor((px - m.l) / slot)));
+    }
+    svg.addEventListener("pointermove", function (e) { show(idxAt(e), true); });
+    svg.addEventListener("pointerleave", function () { show(restIdx, false); });
+    svg.addEventListener("click", function (e) {
+      state.selected = rows[idxAt(e)].date;
+      if (!state.editing) resetForm();
+      renderAll();
+    });
+    svg.addEventListener("keydown", function (e) {
+      var i = ebFocus === null ? restIdx : ebFocus;
+      if (e.key === "ArrowLeft") { e.preventDefault(); show(Math.max(0, i - 1), true); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); show(Math.min(rows.length - 1, i + 1), true); }
+      else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); state.selected = rows[i].date; renderAll(); }
+    });
+    svg.addEventListener("blur", function () { show(restIdx, false); });
+  }
+
+  // ---------- weight chart ----------
+  function renderChart() {
+    var box = $("#chart"), ws = weights(), s = settings();
+    var ro = $("#readout");
+    if (!ws.length) {
+      box.textContent = "";
+      box.appendChild(el("p", "empty", t("wEmpty")));
+      ro.textContent = "";
+      return;
+    }
+    var W = Math.max(280, Math.round(box.clientWidth || 600)), H = 210;
+    var m = { l: 34, r: 16, t: 16, b: 26 };
+    var ts = ws.map(function (x) { return parseIso(x.date).getTime(); });
+    var x1 = ts[ts.length - 1];
+    var x0 = Math.min(ts[0], x1 - 13 * DAY);
+    var roll = ws.map(function (x, i) {
+      var lo = ts[i] - 6 * DAY, sum = 0, n = 0;
+      for (var j = 0; j <= i; j++) if (ts[j] >= lo) { sum += ws[j].w; n++; }
+      return sum / n;
+    });
+    var vals = ws.map(function (x) { return x.w; });
+    if (s.goalWeight !== null) vals.push(s.goalWeight);
+    var y0 = Math.floor(Math.min.apply(null, vals) - 0.5), y1 = Math.ceil(Math.max.apply(null, vals) + 0.5);
+    function sx(tm) { return m.l + (tm - x0) / ((x1 - x0) || 1) * (W - m.l - m.r); }
+    function sy(v) { return m.t + (y1 - v) / ((y1 - y0) || 1) * (H - m.t - m.b); }
+    var step = (y1 - y0) > 10 ? 2 : 1;
+    var g = "";
+    for (var y = y0; y <= y1; y += step) {
+      g += '<line class="grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + sy(y).toFixed(1) + '" y2="' + sy(y).toFixed(1) + '"/>';
+      g += '<text class="axis" x="' + (m.l - 6) + '" y="' + (sy(y) + 4).toFixed(1) + '" text-anchor="end">' + y + '</text>';
+    }
+    if (s.goalWeight !== null) {
+      var gy = sy(s.goalWeight).toFixed(1);
+      g += '<line class="goal" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + gy + '" y2="' + gy + '"/>';
+      g += '<text class="goal-t" x="' + (W - m.r) + '" y="' + (Number(gy) - 5) + '" text-anchor="end">' + t("goalShort") + ' ' + fmt1(s.goalWeight) + '</text>';
+    }
+    g += '<text class="axis" x="' + m.l + '" y="' + (H - 6) + '">' + F.day.format(new Date(x0)) + '</text>';
+    g += '<text class="axis" x="' + (W - m.r) + '" y="' + (H - 6) + '" text-anchor="end">' + F.day.format(new Date(x1)) + '</text>';
+    if (ws.length > 1) {
+      var d = roll.map(function (v, i) { return (i ? "L" : "M") + sx(ts[i]).toFixed(1) + " " + sy(v).toFixed(1); }).join(" ");
+      g += '<path class="avg" d="' + d + '"/>';
+    }
+    ws.forEach(function (x, i) {
+      var last = i === ws.length - 1;
+      g += '<circle class="pt' + (last ? " last" : "") + '" cx="' + sx(ts[i]).toFixed(1) + '" cy="' + sy(x.w).toFixed(1) + '" r="' + (last ? 4.5 : 3) + '"/>';
+    });
+    var lx = sx(x1), ly = sy(ws[ws.length - 1].w);
+    var below = roll[roll.length - 1] >= ws[ws.length - 1].w;
+    g += '<text class="last-t" x="' + (lx - 8).toFixed(1) + '" y="' + (below ? ly + 18 : ly - 9).toFixed(1) + '" text-anchor="end">' + fmt1(ws[ws.length - 1].w) + '</text>';
+    g += '<line class="cursor" id="cursorLine" x1="0" x2="0" y1="' + m.t + '" y2="' + (H - m.b) + '" visibility="hidden"/>';
+    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img">' + g + '</svg>';
+    var svg = box.querySelector("svg"), cl = box.querySelector("#cursorLine");
+    svg.setAttribute("aria-label", t("wAria"));
+    function show(i) {
+      ro.textContent = t("wReadout", { d: cap(F.day.format(parseIso(ws[i].date))), w: fmt1(ws[i].w), a: fmt1(roll[i]) });
+    }
+    show(ws.length - 1);
+    function move(e) {
+      var r = svg.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width * W;
+      var best = 0, bd = Infinity;
+      ts.forEach(function (tm, i) { var dd = Math.abs(sx(tm) - px); if (dd < bd) { bd = dd; best = i; } });
+      var cx = sx(ts[best]).toFixed(1);
+      cl.setAttribute("x1", cx); cl.setAttribute("x2", cx); cl.setAttribute("visibility", "visible");
+      show(best);
+    }
+    svg.addEventListener("pointermove", move);
+    svg.addEventListener("pointerdown", move);
+    svg.addEventListener("pointerleave", function () { cl.setAttribute("visibility", "hidden"); show(ws.length - 1); });
+  }
+
+  // ---------- settings ----------
+  function fillTargetInputs(tg) {
+    var body = $("#targetsBody");
+    body.textContent = "";
+    TYPES.forEach(function (k) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "", typeLabel(k)));
+      ["kcal", "p", "f", "c"].forEach(function (f) {
+        var td = el("td");
+        var inp = el("input");
+        inp.id = "t-" + k + "-" + f;
+        inp.inputMode = "numeric";
+        inp.setAttribute("aria-label", typeLabel(k) + ", " + ({ kcal: t("kcalLbl"), p: t("pLbl"), f: t("fLbl"), c: t("cLbl") })[f]);
+        inp.value = String(tg[k][f]);
+        td.appendChild(inp);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+  function renderSettings() {
+    var s = settings();
+    $("#targSrc").textContent = s.customTargets ? t("targCustom") : t("targSuggested");
+    if (state.settingsDirty) return;
+    var raw = rawSettings(), p = profile();
+    fillTargetInputs(s.targets);
+    $("#sSex").value = p.sex;
+    $("#sAge").value = finite(raw.age) ? String(raw.age) : "";
+    $("#sHeight").value = finite(raw.height) ? String(raw.height) : "";
+    $("#sAge").placeholder = String(PROFILE_DEFAULTS.age);
+    $("#sHeight").placeholder = String(PROFILE_DEFAULTS.height);
+    $("#sStart").value = s.startWeight !== null ? fmt1(s.startWeight) : "";
+    $("#sGoal").value = s.goalWeight !== null ? fmt1(s.goalWeight) : "";
+    $("#sNote").value = s.goalNote;
+    $("#sCut").value = String(cutoff());
+    $("#sK").value = s.burnK !== null ? F.n2.format(s.burnK) : "";
+  }
+  function renderKInfo() {
+    var cal = calibration(), k = F.n2.format(cal.k), txt;
+    if (cal.src === "manual") txt = t("kManual", { k: k });
+    else if (cal.src === "weight") txt = t("kWeight", { k: k, n: cal.n, tdee: fmt(cal.tdee) });
+    else txt = t("kDefault", { k: k, w0: CAL_MIN_WEIGHTS, d0: CAL_MIN_DAYS, w: cal.need.weights, d: cal.need.days });
+    $("#kInfo").textContent = t("kBase") + txt;
+  }
+
+  function renderAll() {
+    if (!state.selected) state.selected = today();
+    renderHeader();
+    renderDay();
+    renderWeek();
+    renderEB();
+    renderChart();
+    renderSettings();
+    renderKInfo();
+  }
+
+  // ---------- meal form ----------
+  function fillTitles() {
+    var sel = $("#mTitle"), cur = sel.value;
+    sel.textContent = "";
+    MEAL_KEYS.forEach(function (k) { var o = el("option", "", MEAL_TEXT[state.lang][k]); o.value = k; sel.appendChild(o); });
+    if (cur) {
+      if (MEAL_KEYS.indexOf(cur) < 0) { var o = el("option", "", cur); o.value = cur; sel.appendChild(o); }
+      sel.value = cur;
+    }
+  }
+  function guessTitle() {
+    var h = new Date().getHours();
+    return h < 11 ? "breakfast" : h < 16 ? "lunch" : h < 21 ? "dinner" : "snack";
+  }
+  function nowTime() { var d = new Date(); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); }
+  function resetForm() {
+    state.editing = null;
+    $("#mealForm").reset();
+    fillTitles();
+    $("#mTitle").value = guessTitle();
+    $("#mTime").value = state.selected === today() ? nowTime() : "";
+    $("#mSave").textContent = t("add");
+    $("#mCancel").hidden = true;
+    $("#mealSummary").textContent = t("addManual");
+  }
+  function startEdit(id) {
+    var d = state.docs.get(id);
+    if (!d) return;
+    state.editing = id;
+    fillTitles();
+    var sel = $("#mTitle"), k = keyOf(MEAL_TEXT, d.title);
+    if (!k && d.title) { var o = el("option", "", String(d.title)); o.value = String(d.title); sel.appendChild(o); }
+    sel.value = k || d.title || guessTitle();
+    $("#mTime").value = d.time || "";
+    $("#mDesc").value = d.desc || "";
+    $("#mKcal").value = finite(d.kcal) ? String(Math.round(d.kcal)) : "";
+    $("#mP").value = finite(d.p) ? String(d.p) : "";
+    $("#mF").value = finite(d.f) ? String(d.f) : "";
+    $("#mC").value = finite(d.c) ? String(d.c) : "";
+    $("#mSave").textContent = t("saveChanges");
+    $("#mCancel").hidden = false;
+    $("#mealSummary").textContent = t("editEntry");
+    $("#mealDetails").open = true;
+    $("#mDesc").focus();
+  }
+  function submitMeal(e) {
+    e.preventDefault();
+    if (!requireDb()) return;
+    var p = num($("#mP").value), f = num($("#mF").value), c = num($("#mC").value), kcal = num($("#mKcal").value);
+    var desc = $("#mDesc").value.trim();
+    var hasMacros = isFinite(p) || isFinite(f) || isFinite(c);
+    if (!isFinite(kcal) && hasMacros) kcal = 4 * (isFinite(p) ? p : 0) + 9 * (isFinite(f) ? f : 0) + 4 * (isFinite(c) ? c : 0);
+    if (!isFinite(kcal)) { setStatus(t("needKcal"), "warn"); return; }
+    var existing = state.editing ? state.docs.get(state.editing) : null;
+    var data = existing ? clone(existing) : {};
+    data.kind = "meal";
+    data.date = existing && isDate(existing.date) ? existing.date : state.selected;
+    data.title = $("#mTitle").value;
+    data.time = $("#mTime").value || "";
+    data.desc = desc;
+    data.kcal = Math.round(kcal);
+    ["p", "f", "c"].forEach(function (k) { var v = ({ p: p, f: f, c: c })[k]; if (isFinite(v)) data[k] = Math.round(v); else delete data[k]; });
+    if (!existing) { data.src = "manual"; data.createdAt = Date.now(); }
+    var id = state.editing || ("meal-" + data.date.replace(/-/g, "") + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5));
+    var btn = $("#mSave");
+    btn.disabled = true;
+    write(id, function (ref) { return ref.set(data); }).then(function () {
+      setStatus("");
+      resetForm();
+      $("#mealDetails").open = false;
+    }, function () {}).then(function () { btn.disabled = false; });
+  }
+
+  function readTargets() {
+    var targets = {}, bad = false;
+    TYPES.forEach(function (k) {
+      targets[k] = {};
+      ["kcal", "p", "f", "c"].forEach(function (f) {
+        var v = num($("#t-" + k + "-" + f).value);
+        if (!isFinite(v) || v < 0) bad = true;
+        targets[k][f] = Math.round(v);
+      });
+    });
+    return bad ? null : targets;
+  }
+  function submitSettings(e, resetTargets) {
+    if (e) e.preventDefault();
+    if (!requireDb()) return;
+    var age = num($("#sAge").value), height = num($("#sHeight").value);
+    var sw = num($("#sStart").value), gw = num($("#sGoal").value);
+    var okW = function (v) { return isNaN(v) || (v >= 30 && v <= 250); };
+    if ((!isNaN(age) && (age < 14 || age > 100)) || (!isNaN(height) && (height < 120 || height > 230)) || !okW(sw) || !okW(gw)) {
+      setStatus(t("profBad"), "warn"); return;
+    }
+    var kRaw = $("#sK").value.trim(), k = num(kRaw);
+    if (kRaw !== "" && (!isFinite(k) || k < 0.3 || k > 1.5)) { setStatus(t("kBad"), "warn"); return; }
+    var targets = null;
+    if (!resetTargets) {
+      targets = readTargets();
+      if (!targets) { setStatus(t("setBad"), "warn"); return; }
+    }
+    var before = settings();
+    write("settings", function (ref) {
+      var data = clone(state.docs.get("settings"));
+      data.lang = state.lang;
+      data.sex = $("#sSex").value === "female" ? "female" : "male";
+      if (isNaN(age)) delete data.age; else data.age = Math.round(age);
+      if (isNaN(height)) delete data.height; else data.height = Math.round(height);
+      if (isNaN(sw)) delete data.startWeight; else data.startWeight = Math.round(sw * 10) / 10;
+      if (isNaN(gw)) delete data.goalWeight; else data.goalWeight = Math.round(gw * 10) / 10;
+      var note = $("#sNote").value.trim().slice(0, 80);
+      if (note) data.goalNote = note; else delete data.goalNote;
+      data.dayCutoff = Number($("#sCut").value);
+      if (kRaw === "") delete data.burnK; else data.burnK = Math.round(k * 100) / 100;
+      if (resetTargets) {
+        delete data.targets;
+      } else {
+        // Keep only targets that differ from the suggested ones, so suggestions follow weight changes.
+        var sug = suggestedTargets(), keep = {};
+        TYPES.forEach(function (tp) {
+          var a = targets[tp], b = sug[tp];
+          var wasCustom = before.customTargets && data.targets && data.targets[tp];
+          if (wasCustom || a.kcal !== b.kcal || a.p !== b.p || a.f !== b.f || a.c !== b.c) keep[tp] = a;
+        });
+        if (Object.keys(keep).length) data.targets = keep; else delete data.targets;
+      }
+      return ref.set(data);
+    }).then(function () {
+      state.settingsDirty = false;
+      setStatus(t("setSaved"));
+      renderAll();
+    }, function () {});
+  }
+
+  // ---------- COROS ----------
+  // queryDailyHealthData answers in text: "--- 20261107 ---\nSteps: … | Calories: 7,704 kcal | …".
+  // Its "Calories" is active energy only (base metabolism is added here).
+  function corosText(result) {
+    var p = result ? result.payload : null, tx = typeof p === "string" ? p : null;
+    if (tx === null && result && Array.isArray(result.content)) {
+      for (var i = 0; i < result.content.length; i++) {
+        var c = result.content[i];
+        if (c && c.type === "text" && typeof c.text === "string") { tx = c.text; break; }
+      }
+    }
+    if (tx === null && p && typeof p === "object") { try { tx = JSON.stringify(p); } catch (e) { tx = ""; } }
+    if (typeof tx === "string" && tx.charAt(0) === '"') { try { var u = JSON.parse(tx); if (typeof u === "string") tx = u; } catch (e) {} }
+    return tx || "";
+  }
+  function parseCoros(text) {
+    var out = new Map(), re = /---\s*(\d{4})(\d{2})(\d{2})\s*---([\s\S]*?)(?=---\s*\d{8}\s*---|$)/g, m;
+    while ((m = re.exec(text))) {
+      var cm = /Calories:\s*(\d[\d,\s]*)\s*kcal/i.exec(m[4]);
+      if (!cm) continue;
+      var v = Number(cm[1].replace(/[,\s]/g, ""));
+      if (isFinite(v)) out.set(m[1] + "-" + m[2] + "-" + m[3], v);
+    }
+    return out;
+  }
+  var COROS_MSG = {
+    needs_reauth: "cNeedsReauth", server_not_connected: "cNotConnected", selection_required: "cSelect",
+    approval_required: "cApproval", consent_required: "cApproval", not_in_manifest: "cOff", blocked_by_policy: "cPolicy",
+    not_granted: "cUnavailable", capability_disabled: "cUnavailable", capability_removed: "cUnavailable",
+    server_unavailable: "cDown", rate_limited: "cDown", upstream_error: "cDown"
+  };
+  function corosMsg() {
+    var e = state.corosErr;
+    if (!e) return "";
+    if (e.code === "tool_error") return t("cToolErr", { m: String(e.message || "").slice(0, 120) });
+    if (e.code === "parse") return t("cParse");
+    return t(COROS_MSG[e.code] || "cFail");
+  }
+  function onCorosData(result) {
+    var mp = parseCoros(corosText(result));
+    if (!mp.size) { state.corosErr = { code: "parse" }; renderAll(); return; }
+    state.coros = mp;
+    state.corosAt = result && result.cache && finite(result.cache.storedAt) ? result.cache.storedAt : Date.now();
+    state.corosErr = null;
+    state.corosAsk = false;
+    syncActive();
+    renderAll();
+  }
+  function onCorosError(err) {
+    var code = err && err.code;
+    var denied = ["needs_reauth", "server_not_connected", "selection_required", "blocked_by_policy", "approval_required", "not_in_manifest", "consent_required"];
+    if (denied.indexOf(code) >= 0) { state.coros = new Map(); state.corosAt = null; }
+    state.corosErr = { code: code, message: err && err.message };
+    state.corosAsk = code === "approval_required" || code === "consent_required";
+    renderAll();
+  }
+  // Keep a copy of each day's active calories in the store, so history outlives the 14-day window.
+  function syncActive() {
+    if (!state.loaded || !state.col || !state.coros.size) return;
+    state.coros.forEach(function (v, date) {
+      var val = Math.round(v), d = dayDoc(date);
+      if (d && finite(d.active) && Math.round(d.active) === val) { state.syncing.delete(date); return; }
+      if (state.syncing.get(date) === val) return;
+      state.syncing.set(date, val);
+      write("day-" + date, function (ref) {
+        var data = clone(dayDoc(date));
+        data.kind = "day"; data.date = date; data.active = val; data.activeAt = Date.now();
+        return ref.set(data);
+      }).catch(function () { state.syncing.delete(date); });
+    });
+  }
+  async function connectCoros() {
+    if (!window.claude || typeof window.claude.use !== "function") return;
+    var mcp = null;
+    try { mcp = await window.claude.use("mcp"); } catch (e) { mcp = null; }
+    if (!mcp) { state.corosErr = { code: "not_granted" }; renderAll(); return; }
+    state.mcp = mcp;
+    try {
+      mcp.watchTool(COROS, COROS_TOOL, COROS_INPUT, function (ev) {
+        if (ev.type === "data") onCorosData(ev.result); else onCorosError(ev.error);
+      }, { cache: COROS_CACHE, refetchInterval: 20 * 60 * 1000 });
+    } catch (e) {
+      onCorosError({ code: "bad_request" });
+    }
+  }
+  function askCoros() {
+    if (!state.mcp) return;
+    var btn = $("#corosBtn");
+    btn.disabled = true;
+    state.mcp.callTool(COROS, COROS_TOOL, COROS_INPUT, { cache: COROS_CACHE })
+      .then(onCorosData, onCorosError)
+      .then(function () { btn.disabled = false; });
+  }
+
+  // ---------- language ----------
+  function setLang(lang, persist) {
+    if (lang !== "en" && lang !== "ru") return;
+    var changed = state.lang !== lang;
+    state.lang = lang;
+    try { window.localStorage.setItem("nutrition-log-lang", lang); } catch (e) {}
+    if (changed) {
+      buildFormats();
+      applyStatic();
+      if (!state.editing) resetForm();
+      renderAll();
+    }
+    if (persist) saveLang(lang);
+  }
+
+  // ---------- wiring ----------
+  function wire() {
+    applyStatic();
+    resetForm();
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.addEventListener("click", function () { setLang(b.getAttribute("data-lang"), true); });
+    });
+    $("#corosBtn").addEventListener("click", askCoros);
+    $("#onbBtn").addEventListener("click", function () {
+      $("#settingsDetails").open = true;
+      $("#settingsCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    $("#prevDay").addEventListener("click", function () { state.selected = addDays(state.selected, -1); if (!state.editing) resetForm(); renderAll(); });
+    $("#nextDay").addEventListener("click", function () { state.selected = addDays(state.selected, 1); if (!state.editing) resetForm(); renderAll(); });
+    $("#todayBtn").addEventListener("click", function () { state.selected = today(); if (!state.editing) resetForm(); renderAll(); });
+    $("#weightForm").addEventListener("submit", function (e) { e.preventDefault(); saveWeight($("#weightInput").value); });
+    $("#mealForm").addEventListener("submit", submitMeal);
+    $("#mCancel").addEventListener("click", function () { resetForm(); $("#mealDetails").open = false; });
+    $("#settingsForm").addEventListener("submit", function (e) { submitSettings(e, false); });
+    $("#resetTargets").addEventListener("click", function () { submitSettings(null, true); });
+    $("#settingsForm").addEventListener("input", function () { state.settingsDirty = true; });
+    if (window.ResizeObserver) {
+      var lastW = 0;
+      new ResizeObserver(function (entries) {
+        var w = Math.round(entries[0].contentRect.width);
+        if (w && Math.abs(w - lastW) > 4) { lastW = w; renderChart(); renderEB(); }
+      }).observe($("#chart"));
+    }
+  }
+
+  async function connect() {
+    if (!window.claude || typeof window.claude.use !== "function") {
+      setStatus(t("stNoClaude"), "bad");
+      return;
+    }
+    var db = null, user = null;
+    try { db = await window.claude.use("db"); } catch (e) { db = null; }
+    try { user = await window.claude.use("user"); } catch (e) { user = null; }
+    if (!db) { setStatus(t("stNoDb"), "bad"); return; }
+    var uid = null;
+    try { uid = user ? await user.id() : null; } catch (e) { uid = null; }
+    if (!uid) { setStatus(t("stSignIn"), "bad"); return; }
+    state.col = db.collection("data/users/" + uid);
+    setStatus(t("stLoading"));
+    var timer = setTimeout(function () {
+      if (!state.loaded) setStatus(t("stSlow"), "warn");
+    }, 10000);
+    state.col.onSnapshot(function (snap) {
+      var mp = new Map();
+      snap.docs.forEach(function (d) { var v = d.data(); if (v && typeof v === "object") mp.set(d.id, v); });
+      state.docs = mp;
+      var first = false;
+      if (!snap.metadata || !snap.metadata.fromCache) {
+        if (!state.loaded) { setStatus(""); first = true; }
+        state.loaded = true;
+        clearTimeout(timer);
+        syncActive();
+      }
+      var lang = rawSettings().lang;
+      if (first && (lang === "en" || lang === "ru") && lang !== state.lang) setLang(lang, false);
+      if (first && !profileComplete()) $("#settingsDetails").open = true;
+      renderAll();
+    }, function (err) {
+      clearTimeout(timer);
+      setStatus(err && err.code === "revoked" ? t("stRevoked") : t("stLoadFail"), "bad");
+    });
+  }
+
+  state.selected = today();
+  buildFormats();
+  wire();
+  renderAll();
+  connect();
+  connectCoros();
+})();
+</script>
+</body>
+</html>
