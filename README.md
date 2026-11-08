@@ -18,17 +18,20 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 ## What you need
 
 - A Claude plan where artifacts can use your connected apps (Pro, Max, Team or Enterprise).
-- **Create and edit files** (code execution) turned on in Claude's settings: skills and artifacts need it.
+- **Create and edit files** (code execution) turned on in Claude's settings.
 - The **COROS** connector added in Claude, for burn data. Without it the log works, just without burn and balance.
 
 ## Set it up
 
-1. Download [`claude-coros-nutrition-log.zip`](https://github.com/l3x4/claude-coros-nutrition-log/releases/latest/download/claude-coros-nutrition-log.zip).
-2. In Claude open **Customize → Skills**, press **+**, choose **Create skill → Upload a skill** and pick the ZIP. The skill shows up as **coros-nutrition-log**: Claude doesn't allow the word "claude" in skill names.
-3. In a new chat write: *Set up my nutrition log.* Claude publishes the page for you.
-4. Open the page, allow it to read COROS when asked, and fill **Profile** in Settings: sex, age, height, start and goal weight.
+Write to Claude in a new chat:
+
+> Set up the nutrition log from https://github.com/l3x4/claude-coros-nutrition-log
+
+Claude reads [`SETUP.md`](SETUP.md), publishes the page for you and offers to save the logging rules as a skill named **coros-nutrition-log**: press **Save** on the card, so every chat knows how to log your food. Then open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, age, height, start and goal weight.
 
 The page is yours: your entries are stored in your own private folder of it, which nobody else can read.
+
+To get a newer version later, ask Claude to *update the nutrition log*: it republishes the page from this repository and your entries stay.
 
 ## Use it
 
@@ -51,26 +54,13 @@ You can also add or fix entries by hand on the page.
 - After 4 weeks with at least 10 weigh-ins and 14 logged days, the factor is fitted so that what you eat, minus the change in your weight (7,700 kcal per kg), matches your burn. That also absorbs systematic errors in the food estimates. You can fix the factor by hand in Settings.
 - **Balance** = eaten − burned. Minus is a deficit.
 
-## Without the skill
-
-You can ask Claude to publish `index.html` from this repository as an artifact and declare its capabilities:
-
-```json
-{"db": {}, "user": {}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData"]}]}}
-```
-
-The skill is still the easier way: it also carries the logging rules and the data format, so Claude logs meals the same way in every chat.
-
 ## Repository
 
 | Path | What it is |
 |---|---|
 | `index.html` | The page: one self-contained HTML file |
-| `skill/coros-nutrition-log/SKILL.md` | Instructions for Claude: setup, logging rules, data format |
-| `scripts/build-skill.sh` | Packs `SKILL.md` and `index.html` into `claude-coros-nutrition-log.zip` |
-| `.github/workflows/build-skill.yml` | Builds the ZIP on every change and attaches it to the latest release |
-
-The ZIP isn't kept in the repository: GitHub Actions builds it from `index.html` and `skill/` on every push to `main`, so the download always matches the code. To build it locally, run `scripts/build-skill.sh`.
+| `SETUP.md` | Setup steps for Claude |
+| `skill/coros-nutrition-log/SKILL.md` | The skill: logging rules and data format for Claude |
 
 ## Disclaimer
 

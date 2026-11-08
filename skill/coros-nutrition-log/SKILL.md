@@ -5,22 +5,15 @@ description: Sets up and keeps a personal nutrition log page in Claude that read
 
 # COROS nutrition log
 
-The user keeps a food, weight and burn log on a page (an artifact) in Claude. You log what they eat from photos or descriptions; the page shows daily totals against targets, morning weight, burn from COROS and the balance. `index.html` in this folder is the page.
+The user keeps a food, weight and burn log on a page (an artifact) in Claude. You log what they eat from photos or descriptions; the page shows daily totals against targets, morning weight, burn from COROS and the balance.
 
 Reply in the user's language. Write `desc` and `note` in the user's language too. Store meal kinds, sources and day types as the English keys listed below: the page translates them.
 
-## 1. Find or set up the page
+## 1. Find the page
 
-1. Look among the user's artifacts for one titled **Nutrition log** (or the name they gave it). If memory holds its slug, use that. If one exists, use it and skip to step 4.
-2. Otherwise publish `index.html` from this skill folder as a new artifact titled **Nutrition log**. Publish the file exactly as it is: do not edit or reformat it.
-3. Then declare its capabilities (new page: publish first, then declare). Use exactly:
-   ```json
-   {"db": {}, "user": {}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData"]}]}}
-   ```
-   If the user has no COROS connector, declare only `{"db": {}, "user": {}}`: the page works without burn data, and COROS can be added later the same way.
-4. Find the user's data folder: `data/users/<id>/`, where `<id>` is the user's id in this artifact's database (the database "who am I" call returns it). Every document you write goes there and nowhere else.
-5. Ask the user to open the page, allow it to read COROS when asked, and fill **Profile** in Settings (sex, age, height, start and goal weight). If they would rather tell you, write the settings document yourself (format below).
-6. If memory is available, save the slug and data folder so later chats find them.
+1. Look among the user's artifacts for one titled **Nutrition log** (or the name they gave it). If memory holds its slug, use that.
+2. If there is none, set it up first by following `SETUP.md` from https://github.com/l3x4/claude-coros-nutrition-log.
+3. Find the user's data folder: `data/users/<id>/`, where `<id>` is the user's id in this artifact's database (the database "who am I" call returns it). Every document you write goes there and nowhere else.
 
 ## 2. Logging rules
 
