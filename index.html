@@ -115,6 +115,16 @@ td.partial { color: var(--muted); }
 .weight label { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
 input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0; }
 textarea { resize: vertical; min-height: 60px; }
+/* Date fields show the date in the page's language; the native picker sits invisibly on top, because
+   browsers format <input type="date"> by the device's region, not by the page. */
+.datebox { position: relative; display: block; min-width: 0; }
+.date-text { display: flex; align-items: center; gap: 6px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.date-text span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.date-text span.none { color: var(--muted); }
+.date-text svg { flex: none; width: 12px; height: 12px; color: var(--muted); }
+.datebox input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
+.datebox input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: auto; height: auto; margin: 0; padding: 0; background: none; cursor: pointer; }
+.datebox:focus-within .date-text { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .meals { display: grid; }
 .meal { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
@@ -355,8 +365,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
             <label class="field" for="sHeight"><span data-i18n="heightLbl"></span><input id="sHeight" inputmode="numeric"></label>
             <label class="field" for="sStart"><span data-i18n="startLbl"></span><input id="sStart" inputmode="decimal"></label>
             <label class="field" for="sGoal"><span data-i18n="goalLblW"></span><input id="sGoal" inputmode="decimal"></label>
-            <label class="field" for="sStartDate"><span data-i18n="startDateLbl"></span><input id="sStartDate" type="date"></label>
-            <label class="field" for="sGoalDate"><span data-i18n="goalDateLbl"></span><input id="sGoalDate" type="date"></label>
+            <label class="field" for="sStartDate"><span data-i18n="startDateLbl"></span><span class="datebox"><span class="date-text" aria-hidden="true"><span></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><input id="sStartDate" type="date"></span></label>
+            <label class="field" for="sGoalDate"><span data-i18n="goalDateLbl"></span><span class="datebox"><span class="date-text" aria-hidden="true"><span></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><input id="sGoalDate" type="date"></span></label>
             <label class="field wide" for="sNote"><span data-i18n="noteLbl"></span><input id="sNote" maxlength="80" data-i18n-ph="notePh"></label>
           </div>
           <p class="hint" data-i18n="dateHint"></p>
@@ -705,7 +715,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     F.n2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     F.plain = new Intl.NumberFormat(loc, { maximumFractionDigits: 0, useGrouping: false });
     F.day = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: "short" });
-    F.row = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: "numeric" });
+    F.row = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: state.lang === "en" ? "short" : "numeric" });
     F.long = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long" });
     F.time = new Intl.DateTimeFormat(loc, { hour: "2-digit", minute: "2-digit" });
     F.date = new Intl.DateTimeFormat(loc, { day: "numeric", month: "short", year: "numeric" });
@@ -720,6 +730,13 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function parseIso(s) { var a = String(s).split("-").map(Number); return new Date(a[0], a[1] - 1, a[2]); }
+  function paintDate(input) {
+    var out = input.parentNode.querySelector(".date-text span"), v = input.value;
+    var ok = /^\d{4}-\d{2}-\d{2}$/.test(v);
+    out.textContent = ok ? F.date.format(parseIso(v)) : "—";
+    out.classList.toggle("none", !ok);
+  }
+  function paintDates() { document.querySelectorAll(".datebox input").forEach(paintDate); }
   function addDays(s, n) { var d = parseIso(s); d.setDate(d.getDate() + n); return iso(d); }
   // Days run from midnight to midnight in local time, the same as COROS counts calories.
   function today() { return iso(new Date()); }
@@ -1017,6 +1034,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var own = state.tr && state.tr.strings ? pick(state.tr.strings.langLbl) : null;
     $("#sLangLbl").textContent = own && own !== EN.langLbl ? EN.langLbl + t("sep") + own : EN.langLbl;
     fillTitles();
+    paintDates();
   }
 
   function renderHeader() {
@@ -1547,6 +1565,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#sNote").value = s.goalNote;
     $("#sStartDate").value = s.startDate || "";
     $("#sGoalDate").value = s.goalDate || "";
+    paintDates();
     $("#sK").value = s.burnK !== null ? F.n2.format(s.burnK) : "";
   }
   function renderKInfo() {
@@ -1826,6 +1845,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "en";
     return findTranslation(nav) ? findTranslation(nav).lang : "en";
   }
+  function englishLocale() {
+    var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+    for (var i = 0; i < list.length; i++) if (/^en-/i.test(list[i] || "")) return safeLocale(list[i]);
+    return "en-US";
+  }
   function safeLocale(tag) {
     try { new Intl.NumberFormat(tag); return tag; } catch (e) { return "en-US"; }
   }
@@ -1845,7 +1869,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function activate(tr, lang) {
     state.tr = tr;
     state.lang = tr ? tr.lang : "en";
-    state.locale = safeLocale(tr ? (tr.locale || tr.lang) : "en-US");
+    state.locale = tr ? safeLocale(tr.locale || tr.lang) : englishLocale();
     state.dir = tr && tr.dir === "rtl" ? "rtl" : "ltr";
     state.trSig = tr ? JSON.stringify(tr) : "";
     try { plural = new Intl.PluralRules(state.locale); } catch (e) { plural = null; }
@@ -1906,6 +1930,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#mCancel").addEventListener("click", function () { resetForm(); $("#mealDetails").open = false; });
     $("#settingsForm").addEventListener("submit", function (e) { submitSettings(e, false); });
     $("#resetTargets").addEventListener("click", function () { submitSettings(null, true); });
+    document.querySelectorAll(".datebox input").forEach(function (n) {
+      n.addEventListener("input", function () { paintDate(n); });
+      n.addEventListener("change", function () { paintDate(n); });
+    });
     $("#settingsForm").addEventListener("input", function (e) { if (e.target.id !== "sLang") state.settingsDirty = true; });
     if (window.ResizeObserver) {
       var lastW = 0;
@@ -1954,6 +1982,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
 
   state.selected = today();
+  state.locale = englishLocale();
   buildFormats();
   wire();
   renderAll();
