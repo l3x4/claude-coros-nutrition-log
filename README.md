@@ -8,7 +8,8 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 </p>
 
 - Food log from photos, labels or a few words, with protein, fat and carbs
-- Targets per day type: rest, easy, key, no deficit, carb loading, suggested from your profile or set by hand
+- Targets per day type (rest, easy, key, maintenance, carb loading), worked out from what you usually burn and the pace your goal needs, or set by hand
+- For losing, gaining or keeping weight: the goal direction comes from your start and goal weight
 - Burn = base metabolism × 1.2 + COROS active calories × a correction factor, fitted from your weight trend
 - A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
 - Morning weight with a 7-day average, weekly balance, 14-day eaten vs burned chart
@@ -26,7 +27,7 @@ Write to Claude in a new chat:
 
 > Set up the nutrition log from https://github.com/l3x4/claude-coros-nutrition-log
 
-Claude reads [`SETUP.md`](SETUP.md), publishes the page for you and offers to save the logging rules as a skill named **coros-nutrition-log**: press **Save** on the card, so every chat knows how to log your food. Then open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, age, height, start and goal weight, start and goal date. Training for a race? Set the goal date 2–3 weeks before it, so the taper and race week are at maintenance.
+Claude reads [`SETUP.md`](SETUP.md), publishes the page for you and offers to save the logging rules as a skill named **coros-nutrition-log**: press **Save** on the card, so every chat knows how to log your food. Then open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, year of birth, height, start and goal weight, start and goal date. Training for a race? Set the goal date 2–3 weeks before it, so the taper and race week are at maintenance.
 
 The page is yours: your entries are stored in your own private folder of it, which nobody else can read.
 
@@ -55,7 +56,8 @@ You can also add or fix entries by hand on the page.
 - **Base**: Mifflin–St Jeor from your profile and 7-day average weight, × 1.2 for digestion and everyday movement. COROS doesn't count those: its active calories cover only workouts and brisk walking.
 - **Active calories** come from COROS (the daily summary, nothing else is read) and are multiplied by a factor. It starts at 0.85, because wrist estimates of workouts usually run high.
 - After 4 weeks with at least 10 weigh-ins and 14 logged days, the factor is fitted so that what you eat, minus the change in your weight (7,700 kcal per kg), matches your burn. That also absorbs systematic errors in the food estimates. You can fix the factor by hand in Settings.
-- **Balance** = eaten − burned. Minus is a deficit.
+- **Balance** = eaten − burned. Minus is a deficit, plus a surplus.
+- **Suggested targets**: for each type of day, what you usually burn on that kind of day plus the daily balance your goal date needs. Losing takes more off rest days and less off key days; gaining does the reverse. Targets never go below your base metabolism.
 
 ## Repository
 

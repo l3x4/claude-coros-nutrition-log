@@ -361,7 +361,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
             <label class="field" for="sSex"><span data-i18n="sexLbl"></span>
               <select id="sSex"><option value="male" data-i18n="male"></option><option value="female" data-i18n="female"></option></select>
             </label>
-            <label class="field" for="sAge"><span data-i18n="ageLbl"></span><input id="sAge" inputmode="numeric"></label>
+            <label class="field" for="sBirth"><span data-i18n="birthLbl"></span><input id="sBirth" inputmode="numeric" maxlength="4"></label>
             <label class="field" for="sHeight"><span data-i18n="heightLbl"></span><input id="sHeight" inputmode="numeric"></label>
             <label class="field" for="sStart"><span data-i18n="startLbl"></span><input id="sStart" inputmode="decimal"></label>
             <label class="field" for="sGoal"><span data-i18n="goalLblW"></span><input id="sGoal" inputmode="decimal"></label>
@@ -401,7 +401,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 1,
+  "_version": 2,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -411,7 +411,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "srcLast": "last weigh-in",
   "lost": "lost {x}",
   "gained": "up {x}",
-  "onbText": "Welcome! Start with your profile in Settings at the bottom of the page: sex, age, height and weight. Daily targets and burn are calculated from it.",
+  "onbText": "Welcome! Start with your profile in Settings at the bottom of the page: sex, year of birth, height and weight. Daily targets and burn are calculated from it.",
   "onbBtn": "Open settings",
   "prevDay": "Previous day",
   "nextDay": "Next day",
@@ -487,7 +487,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "legOk": "±7% of target",
   "legOver": "above target",
   "legLow": "under 80%: something not logged?",
-  "balHint": "Balance = eaten − burned: minus means a deficit. 7,700 kcal of deficit ≈ 1 kg of fat. Today's balance is grey: the day isn't over.",
+  "balHint": "Balance = eaten − burned: minus is a deficit, plus a surplus. About 7,700 kcal ≈ 1 kg of body weight. Today's balance is grey: the day isn't over.",
   "ebH": "Eaten and burned, 14 days",
   "keyEat": "Eaten",
   "keyBurn": "Burn: COROS with correction",
@@ -506,7 +506,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "sexLbl": "Sex",
   "male": "Male",
   "female": "Female",
-  "ageLbl": "Age",
+  "birthLbl": "Year of birth",
   "heightLbl": "Height, cm",
   "startLbl": "Start, kg",
   "goalLblW": "Goal, kg",
@@ -519,7 +519,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   },
   "paceNow": "Last 7 days: {kcal} kcal a day by the log",
   "paceNoData": "Last 7 days: not enough logs and COROS data yet",
-  "paceFast": "That's over 0.75% of body weight a week: consider a later date or a closer goal.",
+  "paceFast": "That's over {pct} of body weight a week: consider a later date or a closer goal.",
   "paceDone": "Goal reached.",
   "pacePast": "The goal date has passed: set a new one in Settings.",
   "paceSetDate": "Set a goal date in Settings to see the pace you need.",
@@ -533,14 +533,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "kWeight": "Now {k}: fitted from your weight trend and logs over {n} days; real burn ≈ {tdee} kcal a day. In the first 2 weeks of a deficit part of the loss is water, so the factor may come out high.",
   "kDefault": "Now {k} by default: watches usually overestimate. Once 4 weeks hold {w0} weigh-ins and {d0} days with logs and COROS (now {w} and {d}), the factor is fitted from your weight trend.",
   "targH": "Targets by day type",
-  "targSuggested": "Suggested from your profile and current weight. Change any number and save to keep your own.",
+  "targSuggested": "Suggested from what you usually burn on each type of day and the pace your goal needs; they follow your weight, watch data and goal date. Change any number and save to keep your own.",
   "targCustom": "Your own targets. “Use suggested” goes back to values calculated from your profile.",
-  "targHint": "If the 7-day average weight drops less than 0.3 kg a week for 3 weeks in a row, take 150–200 kcal off the easy days. If it drops more than 0.8 kg, or training feels hard, add 200.",
+  "targHint": "Your own targets stay as you set them. If the 7-day average misses the needed pace for 2–3 weeks in a row, move them by 150–200 kcal, or go back to the suggested ones.",
   "saveSettings": "Save settings",
   "resetTargets": "Use suggested targets",
   "setSaved": "Settings saved.",
   "setBad": "Check the settings: every target must be a number.",
-  "profBad": "Check the profile: age 14–100, height 120–230 cm, weights 30–250 kg.",
+  "profBad": "Check the profile: year of birth for an age of 14–100, height 120–230 cm, weights 30–250 kg.",
   "kBad": "The factor is a number from 0.3 to 1.5, or leave the field empty.",
   "stNoClaude": "Storage unavailable: open this page in Claude so entries are saved.",
   "stNoDb": "Storage isn't available in this view. Entries won't be saved.",
@@ -573,8 +573,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "type.key": "Key",
   "type.key.short": "Key",
   "type.key.hint": "Intervals, long run or big climbing. Fuel taken during the session comes on top of the target.",
-  "type.maint": "No deficit",
-  "type.maint.short": "No def.",
+  "type.maint": "Maintenance",
+  "type.maint.short": "Maint.",
   "type.maint.hint": "Taper, race or recovery: eat roughly what you burn.",
   "type.carb": "Carb load",
   "type.carb.short": "Carb",
@@ -595,6 +595,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "macroC": "C",
   "langLbl": "Language",
   "goalDated": "Goal: {s} → {g} kg by {d}",
+  "goalKeep": "Goal: keep {g} kg",
+  "progressKeep": "Now {w} kg ({src}), {d} kg from the goal",
+  "paceKeep": "Keeping weight: aim for a balance around zero.",
   "paceNowScale": "Last 7 days: {kcal} kcal a day by the log, weight {kg} kg a week by the scale",
   "paceScaleOnly": "Last 7 days: weight {kg} kg a week by the scale",
   "ebReadout": "{d}: eaten {e}, burn {b}",
@@ -695,6 +698,13 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   var BASE_FACTOR = 1.2;
   var DEFAULT_K = 0.85;
   var KCAL_PER_KG = 7700;
+  // Suggested targets = usual burn for the day type + the daily balance the goal needs.
+  var DEFAULT_ACTIVE = { rest: 200, regular: 700, key: 1500, maint: 400 }; // COROS active kcal until there are 3 days of a type
+  var SHARE = { lose: { rest: 1.25, regular: 1, key: 0.75 }, gain: { rest: 0.75, regular: 1, key: 1.25 } };
+  var PACE_LIMIT = { lose: 0.75, gain: 0.5 };   // % of body weight a week; faster gain is mostly fat
+  var DEFAULT_RATE = { lose: 0.5, gain: 0.25 }; // % of body weight a week when there's no goal date
+  var MAX_DEFICIT = 1000, MAX_SURPLUS = 500;    // kcal a day
+  var KEEP_BAND = 0.5;                          // kg: a goal this close to the start means keeping weight
   var CAL_WINDOW = 28, CAL_MIN_DAYS = 14, CAL_MIN_WEIGHTS = 10;
   var COROS = "COROS", COROS_TOOL = "queryDailyHealthData", COROS_INPUT = { days: 14 };
   var COROS_CACHE = { staleTime: 10 * 60 * 1000, gcTime: 7 * DAY };
@@ -713,6 +723,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     F.n0 = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
     F.n1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     F.n2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    F.pct = new Intl.NumberFormat(loc, { style: "percent", maximumFractionDigits: 2 });
     F.plain = new Intl.NumberFormat(loc, { maximumFractionDigits: 0, useGrouping: false });
     F.day = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: "short" });
     F.row = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: state.lang === "en" ? "short" : "numeric" });
@@ -772,14 +783,17 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function rawSettings() { return state.docs.get("settings") || {}; }
   function profileComplete() {
     var s = rawSettings();
-    return (s.sex === "male" || s.sex === "female") && finite(s.age) && finite(s.height);
+    return (s.sex === "male" || s.sex === "female") && (finite(s.birthYear) || finite(s.age)) && finite(s.height);
   }
   function profile() {
     var s = rawSettings();
+    var by = finite(s.birthYear) ? s.birthYear : null, age = finite(s.age) ? s.age : PROFILE_DEFAULTS.age;
     return {
       sex: s.sex === "female" ? "female" : s.sex === "male" ? "male" : PROFILE_DEFAULTS.sex,
-      age: finite(s.age) ? s.age : PROFILE_DEFAULTS.age,
-      height: finite(s.height) ? s.height : PROFILE_DEFAULTS.height
+      height: finite(s.height) ? s.height : PROFILE_DEFAULTS.height,
+      birthYear: by,
+      // Age on a given day, so past days keep the age they had. Older settings stored a plain age.
+      ageOn: function (date) { return by !== null ? Number(String(date).slice(0, 4)) - by : age; }
     };
   }
   function dayDoc(date) { return state.docs.get("day-" + date) || null; }
@@ -829,23 +843,28 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function baseOn(date) { return bmrOn(date) * BASE_FACTOR; }
   function bmrOn(date) {
     var p = profile();
-    return 10 * weightNear(date) + 6.25 * p.height - 5 * p.age + (p.sex === "female" ? -161 : 5);
+    return 10 * weightNear(date) + 6.25 * p.height - 5 * p.ageOn(date) + (p.sex === "female" ? -161 : 5);
   }
 
-  // Targets suggested from the profile: base = BMR × 1.25, scaled per day type (rest never below BMR);
-  // protein and fat per kg of body weight; carbs fill the rest.
+  // Targets suggested for each day type: the usual burn on that kind of day (base + factor × usual COROS active)
+  // plus the daily balance the goal needs, weighted by day type (losing: more off rest days, less off key days;
+  // gaining: the reverse). Never below base metabolism. Protein and fat per kg of body weight; carbs fill the rest.
   function suggestedTargets() {
-    var date = today(), w = weightNear(date), bmr = bmrOn(date), base = bmr * 1.25;
+    var date = today(), w = weightNear(date), bmr = bmrOn(date), base = baseOn(date), k = calibration().k;
+    var dir = goalDirection(), need = dailyNeed(), share = SHARE[dir] || null, pk = dir === "lose" ? 1.8 : 1.6;
     var spec = {
-      rest:    { kcal: Math.max(bmr, base * 0.82), p: 1.8, f: 0.70 },
-      regular: { kcal: base * 1.04, p: 1.8, f: 0.75 },
-      key:     { kcal: base * 1.38, p: 1.8, f: 0.80 },
-      maint:   { kcal: bmr * 1.45, p: 1.7, f: 0.85 }
+      rest:    { p: pk, f: 0.70 },
+      regular: { p: pk, f: 0.75 },
+      key:     { p: pk, f: 0.80 },
+      maint:   { p: dir === "lose" ? 1.7 : 1.6, f: 0.85 }
     };
     var out = {};
-    Object.keys(spec).forEach(function (k) {
-      var kcal = round(spec[k].kcal, 50), p = round(spec[k].p * w, 5), f = round(spec[k].f * w, 5);
-      out[k] = { kcal: kcal, p: p, f: f, c: Math.max(0, round((kcal - 4 * p - 9 * f) / 4, 5)) };
+    Object.keys(spec).forEach(function (tp) {
+      var kcal = base + k * typicalActive(tp) + (share && share[tp] ? need * share[tp] : 0);
+      kcal = round(Math.max(bmr, kcal), 50);
+      if (kcal < bmr) kcal += 50;
+      var p = round(spec[tp].p * w, 5), f = round(spec[tp].f * w, 5);
+      out[tp] = { kcal: kcal, p: p, f: f, c: Math.max(0, round((kcal - 4 * p - 9 * f) / 4, 5)) };
     });
     var cp = round(1.4 * w, 5), cf = round(0.55 * w, 5), cc = round(7 * w, 5);
     out.carb = { kcal: round(4 * cc + 4 * cp + 9 * cf, 50), p: cp, f: cf, c: cc };
@@ -854,7 +873,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function settings() {
     var s = rawSettings();
     var custom = (s.targets && typeof s.targets === "object") ? s.targets : {};
-    var sug = suggestedTargets(), tg = {}, anyCustom = false;
+    var sug = suggestedTargets(), tg = {}, anyCustom = false, g = goalCfg();
     TYPES.forEach(function (k) {
       var o = custom[k];
       if (o && finite(o.kcal)) {
@@ -866,26 +885,41 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     });
     return {
       targets: tg, customTargets: anyCustom,
-      startWeight: finite(s.startWeight) ? s.startWeight : null,
-      goalWeight: finite(s.goalWeight) ? s.goalWeight : null,
+      startWeight: g.startWeight, goalWeight: g.goalWeight, startDate: g.startDate, goalDate: g.goalDate,
       goalNote: typeof s.goalNote === "string" ? s.goalNote : "",
-      startDate: isDate(s.startDate) ? s.startDate : null,
-      goalDate: isDate(s.goalDate) ? s.goalDate : null,
       burnK: finite(s.burnK) ? s.burnK : null
     };
   }
 
   // ---------- plan and pace ----------
+  function goalCfg() {
+    var s = rawSettings();
+    return {
+      startWeight: finite(s.startWeight) ? s.startWeight : null,
+      goalWeight: finite(s.goalWeight) ? s.goalWeight : null,
+      startDate: isDate(s.startDate) ? s.startDate : null,
+      goalDate: isDate(s.goalDate) ? s.goalDate : null
+    };
+  }
   function currentWeight() {
     var a = avgWeight(today(), 7);
     if (a) return a.avg;
     var ws = weights();
     if (ws.length) return ws[ws.length - 1].w;
-    return settings().startWeight;
+    return goalCfg().startWeight;
+  }
+  // "lose", "gain" or "keep", from the start weight (or the current one) to the goal weight; null without a goal.
+  function goalDirection() {
+    var g = goalCfg();
+    if (g.goalWeight === null) return null;
+    var from = g.startWeight !== null ? g.startWeight : currentWeight();
+    if (from === null) return null;
+    var d = g.goalWeight - from;
+    return Math.abs(d) < KEEP_BAND ? "keep" : d > 0 ? "gain" : "lose";
   }
   // Planned weight on a date: a straight line from (start date, start weight) to (goal date, goal weight).
   function plan() {
-    var s = settings();
+    var s = goalCfg();
     if (s.startWeight === null || s.goalWeight === null || !s.goalDate) return null;
     var ws = weights();
     var startDate = s.startDate || (ws.length ? ws[0].date : null);
@@ -896,18 +930,41 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       at: function (tm) { return s.startWeight + (s.goalWeight - s.startWeight) * (tm - t0) / (t1 - t0); }
     };
   }
+  // Signed: kgWeek and kcalDay are minus to lose, plus to gain.
   function pace() {
-    var s = settings();
-    if (s.goalWeight === null) return null;
-    if (!s.goalDate) return { kind: "nodate" };
+    var g = goalCfg(), dir = goalDirection();
+    if (!dir) return null;
+    if (dir === "keep") return { kind: "keep", dir: dir };
+    if (!g.goalDate) return { kind: "nodate", dir: dir };
     var cur = currentWeight();
     if (cur === null) return null;
-    var days = Math.round((parseIso(s.goalDate) - parseIso(today())) / DAY);
-    var remaining = cur - s.goalWeight;
-    if (remaining <= 0) return { kind: "done" };
-    if (days <= 0) return { kind: "past" };
+    var remaining = g.goalWeight - cur;
+    if (remaining * (dir === "gain" ? 1 : -1) <= 0) return { kind: "done", dir: dir };
+    var days = Math.round((parseIso(g.goalDate) - parseIso(today())) / DAY);
+    if (days <= 0) return { kind: "past", dir: dir };
     var kgDay = remaining / days;
-    return { kind: "need", days: days, kgWeek: kgDay * 7, kcalDay: kgDay * KCAL_PER_KG, pct: kgDay * 7 / cur * 100, date: s.goalDate };
+    return { kind: "need", dir: dir, days: days, kgWeek: kgDay * 7, kcalDay: kgDay * KCAL_PER_KG, pct: Math.abs(kgDay) * 7 / cur * 100, limit: PACE_LIMIT[dir], date: g.goalDate };
+  }
+  // Daily balance the goal needs, kcal: minus to lose, plus to gain, 0 to keep weight or once the goal is reached.
+  // Without a goal date (or past it) a moderate default pace.
+  function dailyNeed() {
+    var pc = pace();
+    if (!pc || pc.kind === "keep" || pc.kind === "done") return 0;
+    var kcal = pc.kind === "need" ? pc.kcalDay
+      : (pc.dir === "gain" ? 1 : -1) * DEFAULT_RATE[pc.dir] / 100 * (currentWeight() || PROFILE_DEFAULTS.weight) * KCAL_PER_KG / 7;
+    return Math.max(-MAX_DEFICIT, Math.min(MAX_SURPLUS, kcal));
+  }
+  // Usual COROS active kcal on days of this type over the last 4 weeks (median); a default until there are 3 such days.
+  function typicalActive(type) {
+    var end = addDays(today(), -1), vals = [];
+    for (var i = 0; i < CAL_WINDOW; i++) {
+      var d = addDays(end, -i), a = activeOn(d);
+      if (a !== null && (dayType(d) || "regular") === type) vals.push(a);
+    }
+    if (vals.length < 3) return DEFAULT_ACTIVE[type];
+    vals.sort(function (x, y) { return x - y; });
+    var mid = vals.length >> 1;
+    return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
   }
   // What actually happened: average logged balance over the last 7 finished days, and the scale trend over 14 days.
   function actualPace() {
@@ -941,8 +998,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
   // Fit k so that logged intake minus the weight trend matches base + k × COROS active.
   function calibration() {
-    var s = settings();
-    if (s.burnK !== null) return { k: s.burnK, src: "manual" };
+    var bk = rawSettings().burnK;
+    if (finite(bk)) return { k: bk, src: "manual" };
     var end = addDays(today(), -1), start = addDays(end, -(CAL_WINDOW - 1));
     var ws = weights().filter(function (x) { return x.date >= start && x.date <= end; });
     var days = [];
@@ -1038,9 +1095,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
 
   function renderHeader() {
-    var s = settings();
+    var s = settings(), dir = goalDirection();
     var line;
-    if (s.startWeight !== null && s.goalWeight !== null) {
+    if (dir === "keep") {
+      line = t("goalKeep", { g: trim1(s.goalWeight) });
+    } else if (s.startWeight !== null && s.goalWeight !== null) {
       line = s.goalDate
         ? t("goalDated", { s: trim1(s.startWeight), g: trim1(s.goalWeight), d: F.date.format(parseIso(s.goalDate)) })
         : t("goal", { s: trim1(s.startWeight), g: trim1(s.goalWeight) });
@@ -1054,17 +1113,26 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var a = avgWeight(today(), 7);
     var ws = weights();
     var cur = a ? a.avg : (ws.length ? ws[ws.length - 1].w : null);
-    var total = s.startWeight !== null && s.goalWeight !== null ? s.startWeight - s.goalWeight : 0;
+    var src = a ? t("src7") : t("srcLast");
+    var fill = $("#goalFill");
+    fill.parentNode.hidden = dir === "keep";
+    if (cur !== null && dir === "keep") {
+      var off = Math.round((cur - s.goalWeight) * 10) / 10;
+      $("#goalText").textContent = t("progressKeep", { w: fmt1(cur), src: src, d: (off > 0 ? "+" : off < 0 ? "−" : "") + fmt1(Math.abs(off)) });
+      return;
+    }
+    var total = s.startWeight !== null && s.goalWeight !== null ? Math.abs(s.goalWeight - s.startWeight) : 0;
     if (cur === null || total <= 0) {
-      $("#goalFill").style.width = "0%";
+      fill.style.width = "0%";
       $("#goalText").textContent = t("progressNone");
       return;
     }
+    // Share of the way from start to goal, in either direction.
+    var moved = (cur - s.startWeight) * (s.goalWeight > s.startWeight ? 1 : -1);
+    fill.style.width = (Math.max(0, Math.min(1, moved / total)) * 100) + "%";
     var lost = s.startWeight - cur;
-    var pct = Math.max(0, Math.min(1, lost / total));
-    $("#goalFill").style.width = (pct * 100) + "%";
     $("#goalText").textContent = t("progressNow", {
-      w: fmt1(cur), src: a ? t("src7") : t("srcLast"),
+      w: fmt1(cur), src: src,
       delta: lost >= 0 ? t("lost", { x: fmt1(lost) }) : t("gained", { x: fmt1(-lost) }),
       total: trim1(total)
     });
@@ -1078,9 +1146,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     if (pc.kind === "nodate") { need.textContent = t("paceSetDate"); return; }
     if (pc.kind === "done") { need.textContent = t("paceDone"); need.classList.add("ok"); return; }
     if (pc.kind === "past") { need.textContent = t("pacePast"); need.classList.add("warn"); return; }
-    var txt = t("paceNeed", { kg: "−" + F.n2.format(pc.kgWeek), kcal: "−" + fmt(pc.kcalDay), d: F.date.format(parseIso(pc.date)), n: pc.days });
-    if (pc.pct > 0.75) { txt += " " + t("paceFast"); need.classList.add("warn"); }
-    need.textContent = txt;
+    if (pc.kind === "keep") {
+      need.textContent = t("paceKeep");
+    } else {
+      var sg = pc.kgWeek > 0 ? "+" : "−";
+      var txt = t("paceNeed", { kg: sg + F.n2.format(Math.abs(pc.kgWeek)), kcal: sg + fmt(Math.abs(pc.kcalDay)), d: F.date.format(parseIso(pc.date)), n: pc.days });
+      if (pc.pct > pc.limit) { txt += " " + t("paceFast", { pct: F.pct.format(pc.limit / 100) }); need.classList.add("warn"); }
+      need.textContent = txt;
+    }
     var ap = actualPace();
     now.hidden = false;
     if (ap.kcalDay === null && ap.kgWeek === null) { now.textContent = t("paceNoData"); return; }
@@ -1090,8 +1163,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       : t("paceScaleOnly", { kg: kgTxt });
     now.textContent = parts;
     // The scale trend is the ground truth when there are enough weigh-ins; otherwise judge by the logged balance.
-    if (ap.kgWeek !== null) now.classList.add(-ap.kgWeek >= pc.kgWeek * 0.9 ? "ok" : "warn");
-    else if (ap.kcalDay !== null) now.classList.add(-ap.kcalDay >= pc.kcalDay * 0.9 ? "ok" : "warn");
+    var ok;
+    if (pc.kind === "keep") {
+      ok = ap.kgWeek !== null ? Math.abs(ap.kgWeek) <= 0.25 : Math.abs(ap.kcalDay) <= 250;
+    } else {
+      var dirSign = pc.dir === "gain" ? 1 : -1;
+      ok = ap.kgWeek !== null ? dirSign * ap.kgWeek >= Math.abs(pc.kgWeek) * 0.9 : dirSign * ap.kcalDay >= Math.abs(pc.kcalDay) * 0.9;
+    }
+    now.classList.add(ok ? "ok" : "warn");
   }
 
   function renderBars(tt, tgt) {
@@ -1310,7 +1389,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     if (a && b7) {
       var delta = a.avg - b7.avg;
       dEl.textContent = (delta > 0 ? "+" : delta < 0 ? "−" : "") + fmt1(Math.abs(delta));
-      if (delta <= -0.2) dEl.classList.add("good");
+      var dir = goalDirection() || "lose";
+      if (dir === "gain") { if (delta >= 0.1) dEl.classList.add("good"); else if (delta < -0.2) dEl.classList.add("bad"); }
+      else if (dir === "keep") { if (Math.abs(delta) > 0.4) dEl.classList.add("bad"); }
+      else if (delta <= -0.2) dEl.classList.add("good");
       else if (delta > 0.2) dEl.classList.add("bad");
       $("#tDeltaS").textContent = t("tDeltaS");
     } else {
@@ -1556,9 +1638,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var raw = rawSettings(), p = profile();
     fillTargetInputs(s.targets);
     $("#sSex").value = p.sex;
-    $("#sAge").value = finite(raw.age) ? String(raw.age) : "";
+    var yr = new Date().getFullYear();
+    $("#sBirth").value = finite(raw.birthYear) ? String(raw.birthYear) : finite(raw.age) ? String(yr - raw.age) : "";
     $("#sHeight").value = finite(raw.height) ? String(raw.height) : "";
-    $("#sAge").placeholder = String(PROFILE_DEFAULTS.age);
+    $("#sBirth").placeholder = String(yr - PROFILE_DEFAULTS.age);
     $("#sHeight").placeholder = String(PROFILE_DEFAULTS.height);
     $("#sStart").value = s.startWeight !== null ? fmt1(s.startWeight) : "";
     $("#sGoal").value = s.goalWeight !== null ? fmt1(s.goalWeight) : "";
@@ -1675,10 +1758,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function submitSettings(e, resetTargets) {
     if (e) e.preventDefault();
     if (!requireDb()) return;
-    var age = num($("#sAge").value), height = num($("#sHeight").value);
+    var birth = num($("#sBirth").value), height = num($("#sHeight").value), yr = new Date().getFullYear();
+    if (birth > yr && birth - 543 <= yr) birth -= 543; // a Buddhist-era year, as Thai users often write it
     var sw = num($("#sStart").value), gw = num($("#sGoal").value);
     var okW = function (v) { return isNaN(v) || (v >= 30 && v <= 250); };
-    if ((!isNaN(age) && (age < 14 || age > 100)) || (!isNaN(height) && (height < 120 || height > 230)) || !okW(sw) || !okW(gw)) {
+    if ((!isNaN(birth) && (birth % 1 !== 0 || yr - birth < 14 || yr - birth > 100)) || (!isNaN(height) && (height < 120 || height > 230)) || !okW(sw) || !okW(gw)) {
       setStatus(t("profBad"), "warn"); return;
     }
     var startDate = $("#sStartDate").value, goalDate = $("#sGoalDate").value;
@@ -1697,7 +1781,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       var data = clone(state.docs.get("settings"));
       data.lang = state.lang;
       data.sex = $("#sSex").value === "female" ? "female" : "male";
-      if (isNaN(age)) delete data.age; else data.age = Math.round(age);
+      if (isNaN(birth)) delete data.birthYear; else data.birthYear = birth;
+      delete data.age;
       if (isNaN(height)) delete data.height; else data.height = Math.round(height);
       if (isNaN(sw)) delete data.startWeight; else data.startWeight = Math.round(sw * 10) / 10;
       if (isNaN(gw)) delete data.goalWeight; else data.goalWeight = Math.round(gw * 10) / 10;

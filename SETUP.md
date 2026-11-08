@@ -41,7 +41,7 @@ Later chats need the rules in `SKILL.md`.
 
 1. Get the user's data folder: `data/users/<id>/`, where `<id>` is the user's id in the artifact's database (the database "who am I" call).
 2. Language: the page ships in English. If the user talks to you in another language, translate the page into it by following `TRANSLATING.md` (it saves a translation document and sets `lang` in `settings`). If `settings` already has `lang` and that translation exists, leave it.
-3. Ask the user to open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, age, height, start and goal weight, start and goal date. If they'd rather answer in chat, write the `settings` document yourself (format in `SKILL.md`).
+3. Ask the user to open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, year of birth, height, start and goal weight, start and goal date. If they'd rather answer in chat, write the `settings` document yourself (format in `SKILL.md`).
 4. Tell them how to use it in one or two lines: send a photo of what they eat, say their morning weight, say the day type (rest, easy, key, no deficit, carb loading).
 
 ## Updating later

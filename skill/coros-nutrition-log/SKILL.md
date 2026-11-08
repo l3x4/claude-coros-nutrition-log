@@ -51,30 +51,31 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
 - `createdAt`: current time in milliseconds.
 
 **Day**, id `day-YYYY-MM-DD`: `{"kind": "day", "date": "2026-11-08", "type": "maint", "weight": 94.6}`
-- `type`: `rest` (no training) | `regular` (easy run up to 1.5 h) | `key` (intervals, long run, big climbing, race-like) | `maint` (no deficit: taper, race, recovery, travel) | `carb` (carb loading 1–2 days before a race).
+- `type`: `rest` (no training) | `regular` (easy run up to 1.5 h) | `key` (intervals, long run, big climbing, race-like) | `maint` (maintenance, eat about what you burn: taper, race, recovery, travel) | `carb` (carb loading 1–2 days before a race).
 - `weight`: morning weight in kg, one decimal.
 - `active` and `activeAt` are written by the page from COROS (active kcal). Leave them alone.
 
 **Settings**, id `settings`:
 ```json
 {
-  "lang": "en", "sex": "male", "age": 42, "height": 180,
+  "lang": "en", "sex": "male", "birthYear": 1984, "height": 180,
   "startWeight": 84, "goalWeight": 78, "startDate": "2026-11-16", "goalDate": "2027-04-18",
   "goalNote": "Trail 60K, May 7",
   "targets": {"rest": {"kcal": 1900, "p": 170, "f": 65, "c": 160}}
 }
 ```
-All fields are optional. `lang` is the page language, a BCP 47 tag: `en`, or a language with a translation document `i18n-<lang>` (see `TRANSLATING.md`); the user can switch it in Settings. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
+All fields are optional. `birthYear` is the year of birth; older settings may hold `age` instead, which the page replaces with `birthYear` on the next save. `lang` is the page language, a BCP 47 tag: `en`, or a language with a translation document `i18n-<lang>` (see `TRANSLATING.md`); the user can switch it in Settings. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the page suggests the others (see below). `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
 
 ## 4. How the page computes things (for answering questions)
 
-- Base metabolism: Mifflin–St Jeor from the 7-day average weight (or last weigh-in, or start weight): 10 × kg + 6.25 × cm − 5 × age + 5 (male) or − 161 (female).
+- Base metabolism: Mifflin–St Jeor from the 7-day average weight (or last weigh-in, or start weight): 10 × kg + 6.25 × cm − 5 × age + 5 (male) or − 161 (female), with the age in that day's year (year − `birthYear`).
 - Burn for a day = base metabolism × 1.2 + COROS active kcal × factor. COROS active calories cover only workouts and brisk walking (cadence over 130), so the 1.2 stands for digestion and everyday movement. The factor starts at 0.85 (watches tend to overestimate workouts). Once the last 4 weeks hold at least 10 weigh-ins and 14 days with both meals and COROS data, the factor is refit so that average intake minus the weight trend (7,700 kcal per kg) equals average burn.
-- Balance = eaten − burn; negative is a deficit.
-- Needed pace: (current weight − goal weight) ÷ days to the goal date, shown per week and as kcal a day (× 7,700 per kg). Current weight is the 7-day average. Above 0.75% of body weight a week the page warns that the pace is aggressive.
+- Balance = eaten − burn; negative is a deficit, positive a surplus.
+- Goal direction: losing if the goal weight is below the start weight, gaining if above, keeping weight if within 0.5 kg.
+- Needed pace: (goal weight − current weight) ÷ days to the goal date, minus to lose and plus to gain, shown per week and as kcal a day (× 7,700 per kg). Current weight is the 7-day average. The page warns above 0.75% of body weight a week when losing and above 0.5% when gaining (faster gain is mostly fat).
 - Planned path: a straight line from the start weight on the start date (or the first weigh-in) to the goal weight on the goal date.
 - Actual pace: average logged balance over the last 7 finished days, and the scale trend over the last 14 days (needs 4 weigh-ins over at least a week).
-- Suggested targets: base × 1.25 scaled by day type (rest ×0.82 but never below base metabolism, easy ×1.04, key ×1.38), no deficit = base metabolism × 1.45; protein 1.8 g/kg (1.7 on no-deficit days), fat 0.7–0.85 g/kg, carbs fill the rest; carb loading = 7 g carbs, 1.4 g protein, 0.55 g fat per kg.
+- Suggested targets for rest, easy and key days: the usual burn on that kind of day (base metabolism × 1.2 + factor × the median COROS active kcal on days of that type in the last 4 weeks; 200, 700 and 1,500 until there are 3 such days) plus the needed daily balance, weighted rest ×1.25, easy ×1, key ×0.75 when losing and the reverse when gaining. Without a goal date (or past it) the balance assumes 0.5% of body weight a week to lose or 0.25% to gain; it is capped at −1,000 and +500 kcal a day, and is zero when keeping weight or once the goal is reached. Never below base metabolism. Maintenance days: usual burn (400 active kcal until there are 3 such days), no deficit or surplus. Protein 1.8 g/kg when losing (1.7 on maintenance days), otherwise 1.6 g/kg; fat 0.7–0.85 g/kg; carbs fill the rest. Carb loading = 7 g carbs, 1.4 g protein, 0.55 g fat per kg.
 
 ## 5. Privacy
 
