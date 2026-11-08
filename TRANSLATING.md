@@ -13,7 +13,7 @@ Translate every value except `_version`. Keep every key.
 - **Placeholders** like `{n}`, `{kg}`, `{d}` must stay exactly as they are; move them wherever the grammar needs them. A value that drops a placeholder is ignored and the English text is shown instead.
 - **Plurals.** A value may be an object of plural forms instead of a string, keyed by the language's plural categories (`zero`, `one`, `two`, `few`, `many`, `other`; see the CLDR plural rules). The page picks the form from `{n}`. `other` is required and must keep every placeholder; the other forms may drop `{n}` ("one day"). Use forms wherever a count appears in a phrase that agrees with it. Label-style phrasing ("days: {n}") avoids the problem and is fine too.
 - **Keep it short where the English is short.** Keys ending in `.short`, keys starting with `th` (table headers) and `macroP` / `macroF` / `macroC` (one-letter protein, fat, carbs) sit in narrow columns.
-- **Keep symbols**: →, ×, ≈, −, ±, %. Units (`kcal`, `kg`, `g`) take the usual local abbreviation.
+- **Keep symbols**: →, ×, ≈, −, ±, %. In right-to-left languages write ← instead of →, since arrows don't mirror on their own. Units (`kcal`, `kg`, `g`) take the usual local abbreviation.
 - `listSep` and `sep` are separators (`", "` and `" · "`): use the local comma ("، " in Arabic and Persian, "、" in Japanese and Chinese).
 - `langLbl` is the word "Language" in the target language.
 - Sports and nutrition terms take their usual local names (carb loading, taper, deficit).
