@@ -1904,6 +1904,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   // First paint before storage loads: the translation cached in this browser, if any.
   (function () {
     try {
+      state.locale = englishLocale();
       var lang = window.localStorage.getItem("nutrition-log-lang");
       var cached = JSON.parse(window.localStorage.getItem("nutrition-log-i18n") || "null");
       if (lang && lang !== "en" && cached && cached.lang === lang && cached.strings) { state.tr = cached; state.lang = lang; state.locale = safeLocale(cached.locale || lang); state.dir = cached.dir === "rtl" ? "rtl" : "ltr"; state.trSig = JSON.stringify(cached); }
@@ -1982,7 +1983,6 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
 
   state.selected = today();
-  state.locale = englishLocale();
   buildFormats();
   wire();
   renderAll();
