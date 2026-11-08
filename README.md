@@ -12,6 +12,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 - Food log from photos, labels or a few words, with protein, fat and carbs
 - Targets per day type: rest, easy, key, no deficit, carb loading, suggested from your profile or set by hand
 - Burn = base metabolism + COROS active calories × a correction factor, fitted from your weight trend
+- A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
 - Morning weight with a 7-day average, weekly balance, 14-day eaten vs burned chart
 - English and Russian
 
@@ -27,7 +28,7 @@ Write to Claude in a new chat:
 
 > Set up the nutrition log from https://github.com/l3x4/claude-coros-nutrition-log
 
-Claude reads [`SETUP.md`](SETUP.md), publishes the page for you and offers to save the logging rules as a skill named **coros-nutrition-log**: press **Save** on the card, so every chat knows how to log your food. Then open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, age, height, start and goal weight.
+Claude reads [`SETUP.md`](SETUP.md), publishes the page for you and offers to save the logging rules as a skill named **coros-nutrition-log**: press **Save** on the card, so every chat knows how to log your food. Then open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, age, height, start and goal weight, start and goal date. Training for a race? Set the goal date 2–3 weeks before it, so the taper and race week are at maintenance.
 
 The page is yours: your entries are stored in your own private folder of it, which nobody else can read.
 

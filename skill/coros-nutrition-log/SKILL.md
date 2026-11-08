@@ -59,18 +59,22 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
 ```json
 {
   "lang": "en", "sex": "male", "age": 42, "height": 180,
-  "startWeight": 84, "goalWeight": 78, "goalNote": "Trail 60K, May",
+  "startWeight": 84, "goalWeight": 78, "startDate": "2026-11-16", "goalDate": "2027-04-18",
+  "goalNote": "Trail 60K, May 7",
   "dayCutoff": 5,
   "targets": {"rest": {"kcal": 1900, "p": 170, "f": 65, "c": 160}}
 }
 ```
-All fields are optional. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
+All fields are optional. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
 
 ## 4. How the page computes things (for answering questions)
 
 - Base metabolism: Mifflin–St Jeor from the 7-day average weight (or last weigh-in, or start weight): 10 × kg + 6.25 × cm − 5 × age + 5 (male) or − 161 (female).
 - Burn for a day = base + COROS active kcal × factor. The factor starts at 0.85 (watches tend to overestimate). Once the last 4 weeks hold at least 10 weigh-ins and 14 days with both meals and COROS data, the factor is refit so that average intake minus the weight trend (7,700 kcal per kg) equals average burn.
 - Balance = eaten − burn; negative is a deficit.
+- Needed pace: (current weight − goal weight) ÷ days to the goal date, shown per week and as kcal a day (× 7,700 per kg). Current weight is the 7-day average. Above 0.75% of body weight a week the page warns that the pace is aggressive.
+- Planned path: a straight line from the start weight on the start date (or the first weigh-in) to the goal weight on the goal date.
+- Actual pace: average logged balance over the last 7 finished days, and the scale trend over the last 14 days (needs 4 weigh-ins over at least a week).
 - Suggested targets: base × 1.25 scaled by day type (rest ×0.82 but never below base metabolism, easy ×1.04, key ×1.38), no deficit = base metabolism × 1.45; protein 1.8 g/kg (1.7 on no-deficit days), fat 0.7–0.85 g/kg, carbs fill the rest; carb loading = 7 g carbs, 1.4 g protein, 0.55 g fat per kg.
 
 ## 5. Privacy

@@ -71,6 +71,8 @@ p { margin: 0; }
 .status:empty { display: none; }
 .status.warn { color: var(--warn); }
 .status.bad { color: var(--bad); }
+.sub.warn { color: var(--warn); }
+.sub.ok { color: var(--ok); }
 .onb { border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
 
 .track { position: relative; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; }
@@ -171,6 +173,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 .chart .axis { fill: var(--muted); font: 11px var(--font-mono); }
 .chart .goal { stroke: var(--ok); stroke-width: 1.5; stroke-dasharray: 5 4; }
 .chart .goal-t { fill: var(--ok); font: 11px var(--font-mono); }
+.chart .plan { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .chart .avg { fill: none; stroke: var(--accent); stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
 .chart .pt { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
 .chart .pt.last { fill: var(--accent); }
@@ -223,6 +226,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     <div class="progress">
       <div class="track" aria-hidden="true"><div class="fill ok" id="goalFill"></div></div>
       <p class="sub" id="goalText"></p>
+      <p class="sub" id="paceNeed" hidden></p>
+      <p class="sub" id="paceNow" hidden></p>
     </div>
     <p class="status" id="status" role="status"></p>
     <div class="onb" id="onb" hidden>
@@ -351,8 +356,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
             <label class="field" for="sStart"><span data-i18n="startLbl"></span><input id="sStart" inputmode="decimal"></label>
             <label class="field" for="sGoal"><span data-i18n="goalLblW"></span><input id="sGoal" inputmode="decimal"></label>
             <label class="field" for="sCut"><span data-i18n="cutLbl"></span><select id="sCut"></select></label>
+            <label class="field" for="sStartDate"><span data-i18n="startDateLbl"></span><input id="sStartDate" type="date"></label>
+            <label class="field" for="sGoalDate"><span data-i18n="goalDateLbl"></span><input id="sGoalDate" type="date"></label>
             <label class="field wide" for="sNote"><span data-i18n="noteLbl"></span><input id="sNote" maxlength="80" data-i18n-ph="notePh"></label>
           </div>
+          <p class="hint" data-i18n="dateHint"></p>
           <p class="hint" data-i18n="cutHint"></p>
         </div>
         <div class="set-block">
@@ -390,7 +398,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   var STR = {
     en: {
       title: "Food, weight & burn",
-      goal: "Goal: {s} → {g} kg", goalNone: "Set your start and goal weight in Settings",
+      goal: "Goal: {s} → {g} kg", goalBy: " by {d}", goalNone: "Set your start and goal weight in Settings",
       progressNone: "Log your morning weight to see progress",
       progressNow: "Now {w} kg ({src}), {delta} of {total} kg", src7: "7-day average", srcLast: "last weigh-in",
       lost: "lost {x}", gained: "up {x}",
@@ -426,11 +434,19 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       ebEmpty: "No logs or COROS data in the last 14 days yet.", ebAria: "Eaten and burned per day for 14 days; details in the table below",
       ebEaten: "eaten", ebBurn: "burn", ebBal: "balance", ebRunning: "(day in progress)",
       wH: "Weight", wEmpty: "Weigh yourself in the morning before eating and log it. Dots and a 7-day average will appear here.",
-      wHint: "Dots are morning weigh-ins, the line is the 7-day average. Watch the line: daily weight jumps 0.5–1.5 kg with water and salt.",
+      wHint: "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
       wReadout: "{d}: {w} kg, 7-day average {a}", goalShort: "goal", wAria: "Morning weight and 7-day average",
       setH: "Settings and targets", profH: "Profile",
       sexLbl: "Sex", male: "Male", female: "Female", ageLbl: "Age", heightLbl: "Height, cm",
-      startLbl: "Start, kg", goalLblW: "Goal, kg", noteLbl: "Goal note (optional)", notePh: "e.g. Rinjani 100, May 2027",
+      startLbl: "Start, kg", goalLblW: "Goal, kg", startDateLbl: "Start date", goalDateLbl: "Goal date",
+      dateHint: "The plan runs from the start weight on the start date to the goal weight on the goal date. For a race, set the goal date 2–3 weeks before it, so the taper and race week are at maintenance.",
+      paceNeed: "Needed: {kg} kg a week ≈ {kcal} kcal a day until {d} ({n} days)",
+      paceNow: "Last 7 days: {kcal} kcal a day by the log", paceTrend: ", weight {kg} kg a week by the scale",
+      paceNoData: "Last 7 days: not enough logs and COROS data yet",
+      paceFast: "That's over 0.75% of body weight a week: consider a later date or a closer goal.",
+      paceDone: "Goal reached.", pacePast: "The goal date has passed: set a new one in Settings.",
+      paceSetDate: "Set a goal date in Settings to see the pace you need.",
+      planShort: "plan {p}", dateBad: "The goal date must be after the start date.", noteLbl: "Goal note (optional)", notePh: "e.g. Rinjani 100, May 2027",
       cutLbl: "Day ends at", cutMidnight: "00:00 (midnight)",
       cutHint: "Food logged after midnight and before this hour counts to the previous day, so a late snack before sleep stays with its day.",
       burnH: "Burn", kLbl: "Watch factor",
@@ -463,7 +479,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     },
     ru: {
       title: "Питание, вес и расход",
-      goal: "Цель: {s} → {g} кг", goalNone: "Укажи стартовый и целевой вес в настройках",
+      goal: "Цель: {s} → {g} кг", goalBy: " к {d}", goalNone: "Укажи стартовый и целевой вес в настройках",
       progressNone: "Впиши вес утром, чтобы видеть прогресс",
       progressNow: "Сейчас {w} кг ({src}), {delta} из {total} кг", src7: "в среднем за 7 дней", srcLast: "последнее взвешивание",
       lost: "сброшено {x}", gained: "плюс {x}",
@@ -499,11 +515,19 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       ebEmpty: "Пока нет ни записей, ни данных COROS за последние 14 дней.", ebAria: "Съедено и расход по дням за 14 дней; подробности в таблице ниже",
       ebEaten: "съедено", ebBurn: "расход", ebBal: "баланс", ebRunning: "(день идёт)",
       wH: "Вес", wEmpty: "Взвешивайся утром натощак и вписывай вес. Здесь появятся точки и среднее за 7 дней.",
-      wHint: "Точки — утренние взвешивания, линия — среднее за 7 дней. Смотри на линию: дневной вес скачет на 0,5–1,5 кг от воды и соли.",
+      wHint: "Точки — утренние взвешивания, линия — среднее за 7 дней, пунктир — план до цели. Смотри на среднее: дневной вес скачет на 0,5–1,5 кг от воды и соли.",
       wReadout: "{d}: {w} кг, среднее за 7 дней {a}", goalShort: "цель", wAria: "Утренний вес и среднее за 7 дней",
       setH: "Настройки и цели", profH: "Профиль",
       sexLbl: "Пол", male: "Мужской", female: "Женский", ageLbl: "Возраст", heightLbl: "Рост, см",
-      startLbl: "Старт, кг", goalLblW: "Цель, кг", noteLbl: "Подпись к цели (необязательно)", notePh: "например, Rinjani 100, май 2027",
+      startLbl: "Старт, кг", goalLblW: "Цель, кг", startDateLbl: "Дата старта", goalDateLbl: "Дата цели",
+      dateHint: "План идёт от стартового веса в дату старта к целевому весу в дату цели. Если цель — гонка, ставь дату цели за 2–3 недели до неё, чтобы подводка и неделя гонки были без дефицита.",
+      paceNeed: "Нужно: {kg} кг в неделю ≈ {kcal} ккал в день до {d} ({n} дн.)",
+      paceNow: "За 7 дней: {kcal} ккал в день по записям", paceTrend: ", вес {kg} кг в неделю по весам",
+      paceNoData: "За 7 дней: пока мало записей и данных COROS",
+      paceFast: "Это быстрее 0,75% веса в неделю: стоит сдвинуть дату или цель.",
+      paceDone: "Цель достигнута.", pacePast: "Дата цели прошла: задай новую в настройках.",
+      paceSetDate: "Укажи дату цели в настройках, чтобы видеть нужный темп.",
+      planShort: "план {p}", dateBad: "Дата цели должна быть позже даты старта.", noteLbl: "Подпись к цели (необязательно)", notePh: "например, Rinjani 100, май 2027",
       cutLbl: "День заканчивается в", cutMidnight: "00:00 (полночь)",
       cutHint: "Еда после полуночи и до этого часа идёт в предыдущий день, чтобы перекус перед сном оставался в своём дне.",
       burnH: "Расход", kLbl: "Коэфф. к часам",
@@ -628,6 +652,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     F.row = new Intl.DateTimeFormat(loc, { weekday: "short", day: "numeric", month: "numeric" });
     F.long = new Intl.DateTimeFormat(loc, { weekday: "long", day: "numeric", month: "long" });
     F.time = new Intl.DateTimeFormat(loc, { hour: "2-digit", minute: "2-digit" });
+    F.date = new Intl.DateTimeFormat(loc, { day: "numeric", month: "short", year: "numeric" });
   }
   function fmt(n) { return F.n0.format(Math.round(n)); }
   function fmt1(n) { return F.n1.format(n); }
@@ -760,7 +785,59 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       startWeight: finite(s.startWeight) ? s.startWeight : null,
       goalWeight: finite(s.goalWeight) ? s.goalWeight : null,
       goalNote: typeof s.goalNote === "string" ? s.goalNote : "",
+      startDate: isDate(s.startDate) ? s.startDate : null,
+      goalDate: isDate(s.goalDate) ? s.goalDate : null,
       burnK: finite(s.burnK) ? s.burnK : null
+    };
+  }
+
+  // ---------- plan and pace ----------
+  function currentWeight() {
+    var a = avgWeight(today(), 7);
+    if (a) return a.avg;
+    var ws = weights();
+    if (ws.length) return ws[ws.length - 1].w;
+    return settings().startWeight;
+  }
+  // Planned weight on a date: a straight line from (start date, start weight) to (goal date, goal weight).
+  function plan() {
+    var s = settings();
+    if (s.startWeight === null || s.goalWeight === null || !s.goalDate) return null;
+    var ws = weights();
+    var startDate = s.startDate || (ws.length ? ws[0].date : null);
+    if (!startDate || startDate >= s.goalDate) return null;
+    var t0 = parseIso(startDate).getTime(), t1 = parseIso(s.goalDate).getTime();
+    return {
+      t0: t0, t1: t1,
+      at: function (tm) { return s.startWeight + (s.goalWeight - s.startWeight) * (tm - t0) / (t1 - t0); }
+    };
+  }
+  function pace() {
+    var s = settings();
+    if (s.goalWeight === null) return null;
+    if (!s.goalDate) return { kind: "nodate" };
+    var cur = currentWeight();
+    if (cur === null) return null;
+    var days = Math.round((parseIso(s.goalDate) - parseIso(today())) / DAY);
+    var remaining = cur - s.goalWeight;
+    if (remaining <= 0) return { kind: "done" };
+    if (days <= 0) return { kind: "past" };
+    var kgDay = remaining / days;
+    return { kind: "need", days: days, kgWeek: kgDay * 7, kcalDay: kgDay * KCAL_PER_KG, pct: kgDay * 7 / cur * 100, date: s.goalDate };
+  }
+  // What actually happened: average logged balance over the last 7 finished days, and the scale trend over 14 days.
+  function actualPace() {
+    var cal = calibration(), end = addDays(today(), -1), sum = 0, n = 0;
+    for (var i = 0; i < 7; i++) {
+      var d = addDays(end, -i), meals = mealsOn(d), b = burnOn(d, cal);
+      if (meals.length && b) { sum += totals(meals).kcal - b.total; n++; }
+    }
+    var start = addDays(today(), -13);
+    var ws = weights().filter(function (x) { return x.date >= start; });
+    var span = ws.length ? (parseIso(ws[ws.length - 1].date) - parseIso(ws[0].date)) / DAY : 0;
+    return {
+      kcalDay: n >= 3 ? sum / n : null,
+      kgWeek: ws.length >= 4 && span >= 7 ? slopePerDay(ws) * 7 : null
     };
   }
 
@@ -883,9 +960,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function renderHeader() {
     var s = settings();
     var line = s.startWeight !== null && s.goalWeight !== null ? t("goal", { s: trim1(s.startWeight), g: trim1(s.goalWeight) }) : t("goalNone");
+    if (s.goalDate && s.goalWeight !== null) line += t("goalBy", { d: F.date.format(parseIso(s.goalDate)) });
     if (s.goalNote) line += " · " + s.goalNote;
     $("#goalLine").textContent = line;
     $("#onb").hidden = !state.loaded || profileComplete();
+    renderPace();
     var a = avgWeight(today(), 7);
     var ws = weights();
     var cur = a ? a.avg : (ws.length ? ws[ws.length - 1].w : null);
@@ -903,6 +982,28 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       delta: lost >= 0 ? t("lost", { x: fmt1(lost) }) : t("gained", { x: fmt1(-lost) }),
       total: trim1(total)
     });
+  }
+
+  function renderPace() {
+    var need = $("#paceNeed"), now = $("#paceNow"), pc = pace();
+    need.className = "sub"; now.className = "sub";
+    need.hidden = !pc; now.hidden = true;
+    if (!pc) return;
+    if (pc.kind === "nodate") { need.textContent = t("paceSetDate"); return; }
+    if (pc.kind === "done") { need.textContent = t("paceDone"); need.classList.add("ok"); return; }
+    if (pc.kind === "past") { need.textContent = t("pacePast"); need.classList.add("warn"); return; }
+    var txt = t("paceNeed", { kg: "−" + F.n2.format(pc.kgWeek), kcal: "−" + fmt(pc.kcalDay), d: F.date.format(parseIso(pc.date)), n: pc.days });
+    if (pc.pct > 0.75) { txt += " " + t("paceFast"); need.classList.add("warn"); }
+    need.textContent = txt;
+    var ap = actualPace();
+    now.hidden = false;
+    if (ap.kcalDay === null && ap.kgWeek === null) { now.textContent = t("paceNoData"); return; }
+    var parts = ap.kcalDay !== null ? t("paceNow", { kcal: signed(ap.kcalDay) }) : t("paceNoData");
+    if (ap.kgWeek !== null) parts += t("paceTrend", { kg: (ap.kgWeek > 0 ? "+" : ap.kgWeek < 0 ? "−" : "") + F.n2.format(Math.abs(ap.kgWeek)) });
+    now.textContent = parts;
+    // The scale trend is the ground truth when there are enough weigh-ins; otherwise judge by the logged balance.
+    if (ap.kgWeek !== null) now.classList.add(-ap.kgWeek >= pc.kgWeek * 0.9 ? "ok" : "warn");
+    else if (ap.kcalDay !== null) now.classList.add(-ap.kcalDay >= pc.kcalDay * 0.9 ? "ok" : "warn");
   }
 
   function renderBars(tt, tgt) {
@@ -1283,6 +1384,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     });
     var vals = ws.map(function (x) { return x.w; });
     if (s.goalWeight !== null) vals.push(s.goalWeight);
+    var pl = plan(), pa = null, pb = null;
+    if (pl) {
+      pa = Math.max(x0, pl.t0); pb = Math.min(x1, pl.t1);
+      if (pb > pa) vals.push(pl.at(pa), pl.at(pb)); else pl = null;
+    }
     var y0 = Math.floor(Math.min.apply(null, vals) - 0.5), y1 = Math.ceil(Math.max.apply(null, vals) + 0.5);
     function sx(tm) { return m.l + (tm - x0) / ((x1 - x0) || 1) * (W - m.l - m.r); }
     function sy(v) { return m.t + (y1 - v) / ((y1 - y0) || 1) * (H - m.t - m.b); }
@@ -1299,6 +1405,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     }
     g += '<text class="axis" x="' + m.l + '" y="' + (H - 6) + '">' + F.day.format(new Date(x0)) + '</text>';
     g += '<text class="axis" x="' + (W - m.r) + '" y="' + (H - 6) + '" text-anchor="end">' + F.day.format(new Date(x1)) + '</text>';
+    if (pl) g += '<line class="plan" x1="' + sx(pa).toFixed(1) + '" y1="' + sy(pl.at(pa)).toFixed(1) + '" x2="' + sx(pb).toFixed(1) + '" y2="' + sy(pl.at(pb)).toFixed(1) + '"/>';
     if (ws.length > 1) {
       var d = roll.map(function (v, i) { return (i ? "L" : "M") + sx(ts[i]).toFixed(1) + " " + sy(v).toFixed(1); }).join(" ");
       g += '<path class="avg" d="' + d + '"/>';
@@ -1315,7 +1422,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var svg = box.querySelector("svg"), cl = box.querySelector("#cursorLine");
     svg.setAttribute("aria-label", t("wAria"));
     function show(i) {
-      ro.textContent = t("wReadout", { d: cap(F.day.format(parseIso(ws[i].date))), w: fmt1(ws[i].w), a: fmt1(roll[i]) });
+      var txt = t("wReadout", { d: cap(F.day.format(parseIso(ws[i].date))), w: fmt1(ws[i].w), a: fmt1(roll[i]) });
+      if (pl && ts[i] >= pl.t0 && ts[i] <= pl.t1) txt += ", " + t("planShort", { p: fmt1(pl.at(ts[i])) });
+      ro.textContent = txt;
     }
     show(ws.length - 1);
     function move(e) {
@@ -1366,6 +1475,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#sStart").value = s.startWeight !== null ? fmt1(s.startWeight) : "";
     $("#sGoal").value = s.goalWeight !== null ? fmt1(s.goalWeight) : "";
     $("#sNote").value = s.goalNote;
+    $("#sStartDate").value = s.startDate || "";
+    $("#sGoalDate").value = s.goalDate || "";
     $("#sCut").value = String(cutoff());
     $("#sK").value = s.burnK !== null ? F.n2.format(s.burnK) : "";
   }
@@ -1482,6 +1593,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     if ((!isNaN(age) && (age < 14 || age > 100)) || (!isNaN(height) && (height < 120 || height > 230)) || !okW(sw) || !okW(gw)) {
       setStatus(t("profBad"), "warn"); return;
     }
+    var startDate = $("#sStartDate").value, goalDate = $("#sGoalDate").value;
+    if (startDate && !isDate(startDate)) startDate = "";
+    if (goalDate && !isDate(goalDate)) goalDate = "";
+    if (startDate && goalDate && goalDate <= startDate) { setStatus(t("dateBad"), "warn"); return; }
     var kRaw = $("#sK").value.trim(), k = num(kRaw);
     if (kRaw !== "" && (!isFinite(k) || k < 0.3 || k > 1.5)) { setStatus(t("kBad"), "warn"); return; }
     var targets = null;
@@ -1500,6 +1615,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (isNaN(gw)) delete data.goalWeight; else data.goalWeight = Math.round(gw * 10) / 10;
       var note = $("#sNote").value.trim().slice(0, 80);
       if (note) data.goalNote = note; else delete data.goalNote;
+      if (startDate) data.startDate = startDate; else delete data.startDate;
+      if (goalDate) data.goalDate = goalDate; else delete data.goalDate;
       data.dayCutoff = Number($("#sCut").value);
       if (kRaw === "") delete data.burnK; else data.burnK = Math.round(k * 100) / 100;
       if (resetTargets) {
