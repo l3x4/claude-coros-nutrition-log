@@ -21,9 +21,11 @@
   --ok: #2e7d4f;
   --warn: #a8661a;
   --bad: #b42318;
-  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
-  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  /* --font-script is set by a translation whose script IBM Plex doesn't cover (Arabic, Hebrew, Thai, CJK…). */
+  --font-script: "IBM Plex Sans";
+  --font-display: "IBM Plex Sans Condensed", var(--font-script), "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", var(--font-script), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", var(--font-script), ui-monospace, Menlo, Consolas, monospace;
   /* Intake vs burn chart: categorical slots 1–2, validated against --panel in both modes. */
   --s-eat: #2a78d6;
   --s-burn: #eb6834;
@@ -152,12 +154,12 @@ details[open] > summary { margin-bottom: 10px; }
 
 .scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { padding: 7px 4px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th, td { padding: 7px 4px; text-align: start; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { font-weight: 500; color: var(--muted); font-size: 12px; }
-td.r, th.r { text-align: right; }
+td.r, th.r { text-align: end; }
 #weekBody tr { cursor: pointer; }
 tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline-end: 6px; vertical-align: 1px; }
 .dot.ok { background: var(--ok); }
 .dot.over { background: var(--warn); }
 .dot.low { border: 1.5px solid var(--muted); }
@@ -175,7 +177,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 .chart .last-t { fill: var(--ink); font: 500 12px var(--font-mono); }
 .chart .cursor { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; }
 .readout { font-size: 13px; color: var(--muted); min-height: 1.45em; }
-.readout b { color: var(--ink); font-weight: 600; }
+.readout b { color: var(--ink); font-weight: 600; unicode-bidi: isolate; }
+[dir="rtl"] .icon { transform: scaleX(-1); }
 .chart .eat { fill: var(--s-eat); }
 .chart .eat.dim { opacity: 0.45; }
 .chart .burn { fill: none; stroke: var(--s-burn); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -191,7 +194,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 .sw-line { width: 16px; height: 2px; border-radius: 1px; background: var(--s-burn); }
 
 .targets td { padding: 4px; }
-.targets input { padding: 6px 6px; text-align: right; font-variant-numeric: tabular-nums; }
+.targets input { padding: 6px 6px; text-align: end; font-variant-numeric: tabular-nums; }
 .targets td:first-child { white-space: normal; min-width: 92px; }
 
 @media (max-width: 420px) {
@@ -310,7 +313,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     <h2 id="ebH" data-i18n="ebH"></h2>
     <p class="keys"><span class="key"><span class="sw-bar" aria-hidden="true"></span><span data-i18n="keyEat"></span></span><span class="key"><span class="sw-line" aria-hidden="true"></span><span data-i18n="keyBurn"></span></span></p>
     <p class="readout num" id="ebReadout"></p>
-    <div class="chart" id="ebChart"></div>
+    <div class="chart" id="ebChart" dir="ltr"></div>
     <details>
       <summary data-i18n="ebTable"></summary>
       <div class="scroll">
@@ -326,7 +329,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   <section class="card" aria-labelledby="wH">
     <h2 id="wH" data-i18n="wH"></h2>
     <p class="readout num" id="readout"></p>
-    <div class="chart" id="chart"></div>
+    <div class="chart" id="chart" dir="ltr"></div>
     <p class="hint" data-i18n="wHint"></p>
   </section>
 
@@ -336,10 +339,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       <form id="settingsForm" autocomplete="off" class="meal-form">
         <div class="set-block">
           <div class="set-grid">
-            <label class="field" for="sLang">Language · Язык
-              <select id="sLang"><option value="en">English</option><option value="ru">Русский</option></select>
+            <label class="field" for="sLang"><span id="sLangLbl">Language</span>
+              <select id="sLang"></select>
             </label>
           </div>
+          <p class="hint" data-i18n="langHint"></p>
         </div>
         <div class="set-block">
           <h3 data-i18n="profH"></h3>
@@ -384,239 +388,292 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   </section>
 </main>
 
+<!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
+<script type="application/json" id="i18n-en">
+{
+  "_version": 1,
+  "title": "Food, weight & burn",
+  "goal": "Goal: {s} → {g} kg",
+  "goalNone": "Set your start and goal weight in Settings",
+  "progressNone": "Log your morning weight to see progress",
+  "progressNow": "Now {w} kg ({src}), {delta} of {total} kg",
+  "src7": "7-day average",
+  "srcLast": "last weigh-in",
+  "lost": "lost {x}",
+  "gained": "up {x}",
+  "onbText": "Welcome! Start with your profile in Settings at the bottom of the page: sex, age, height and weight. Daily targets and burn are calculated from it.",
+  "onbBtn": "Open settings",
+  "prevDay": "Previous day",
+  "nextDay": "Next day",
+  "backToday": "Back to today",
+  "dayType": "Day type",
+  "typePick": "Pick the day type. Until then the Easy day target is used.",
+  "kcal": "kcal",
+  "left": "{n} kcal left",
+  "over": "{n} kcal over target",
+  "burn": "Burn",
+  "balance": "Balance",
+  "burnParts": "base {b} + watch {a} × {k}",
+  "dayRunning": "day in progress",
+  "corosAt": "COROS at {t}",
+  "corosNoDay": "No COROS data for this day.",
+  "corosNotYet": "COROS hasn't returned this day yet.",
+  "corosBtn": "Allow reading COROS",
+  "barKcal": "Kcal",
+  "barP": "Protein",
+  "barF": "Fat",
+  "barC": "Carbs",
+  "g": "g",
+  "weightLbl": "Morning weight, kg",
+  "weightPh": "e.g. 94.6",
+  "save": "Save",
+  "weightBad": "Weight should be a number, e.g. 94.6.",
+  "foodH": "Food log",
+  "mealsEmpty": "Nothing yet. Send a food photo to Claude in chat or add it manually.",
+  "edit": "Edit",
+  "del": "Delete",
+  "delSure": "Delete?",
+  "mealFallback": "Meal",
+  "addManual": "Add manually",
+  "editEntry": "Edit entry",
+  "mealLbl": "Meal",
+  "timeLbl": "Time",
+  "whatLbl": "What you ate",
+  "whatPh": "rice 200 g, chicken 150 g",
+  "kcalLbl": "Kcal",
+  "pLbl": "Protein, g",
+  "fLbl": "Fat, g",
+  "cLbl": "Carbs, g",
+  "autoPh": "auto",
+  "autoHint": "Without kcal they are computed from macros: 4 × protein + 9 × fat + 4 × carbs.",
+  "add": "Add",
+  "saveChanges": "Save changes",
+  "cancel": "Cancel",
+  "needKcal": "Enter kcal or at least the macros.",
+  "dayHint": "Send food photos to Claude in chat: it estimates them and logs them here. A photo estimate is about ±25% per plate. Days run from midnight to midnight, the same as COROS counts calories. Burn comes from COROS with a correction (see Settings).",
+  "weekH": "Last 7 days",
+  "tAvgK": "Eaten, average",
+  "tAvgKs": "target {t} · days: {n}",
+  "noLogs": "no logs",
+  "tBal": "Balance, week",
+  "tBalS": "≈ {kg} kg · days: {n}",
+  "tBalNone": "needs logs and COROS",
+  "tAvgW": "Weight, average",
+  "tAvgWs": "weigh-ins: {n}",
+  "noWeigh": "no weigh-ins",
+  "tDelta": "vs last week",
+  "tDeltaS": "kg per week",
+  "tDeltaNone": "needs 2 weeks of weigh-ins",
+  "thDay": "Day",
+  "thType": "Day type",
+  "thKcal": "Kcal / target",
+  "thBal": "Balance",
+  "thP": "P, g",
+  "thF": "F, g",
+  "thC": "C, g",
+  "thW": "Weight",
+  "thEat": "Eaten",
+  "thBurn": "Burn",
+  "legOk": "±7% of target",
+  "legOver": "above target",
+  "legLow": "under 80%: something not logged?",
+  "balHint": "Balance = eaten − burned: minus means a deficit. 7,700 kcal of deficit ≈ 1 kg of fat. Today's balance is grey: the day isn't over.",
+  "ebH": "Eaten and burned, 14 days",
+  "keyEat": "Eaten",
+  "keyBurn": "Burn: COROS with correction",
+  "ebTable": "As a table",
+  "ebHint": "Tap a day to open it above. A hollow dot is today: the watch is still counting and food may not all be logged yet.",
+  "ebEmpty": "No logs or COROS data in the last 14 days yet.",
+  "ebAria": "Eaten and burned per day for 14 days; details in the table below",
+  "wH": "Weight",
+  "wEmpty": "Weigh yourself in the morning before eating and log it. Dots and a 7-day average will appear here.",
+  "wHint": "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
+  "wReadout": "{d}: {w} kg, 7-day average {a}",
+  "goalShort": "goal",
+  "wAria": "Morning weight and 7-day average",
+  "setH": "Settings and targets",
+  "profH": "Profile",
+  "sexLbl": "Sex",
+  "male": "Male",
+  "female": "Female",
+  "ageLbl": "Age",
+  "heightLbl": "Height, cm",
+  "startLbl": "Start, kg",
+  "goalLblW": "Goal, kg",
+  "startDateLbl": "Start date",
+  "goalDateLbl": "Goal date",
+  "dateHint": "The plan runs from the start weight on the start date to the goal weight on the goal date. For a race, set the goal date 2–3 weeks before it, so the taper and race week are at maintenance.",
+  "paceNeed": {
+    "one": "Needed: {kg} kg a week ≈ {kcal} kcal a day until {d} ({n} day)",
+    "other": "Needed: {kg} kg a week ≈ {kcal} kcal a day until {d} ({n} days)"
+  },
+  "paceNow": "Last 7 days: {kcal} kcal a day by the log",
+  "paceNoData": "Last 7 days: not enough logs and COROS data yet",
+  "paceFast": "That's over 0.75% of body weight a week: consider a later date or a closer goal.",
+  "paceDone": "Goal reached.",
+  "pacePast": "The goal date has passed: set a new one in Settings.",
+  "paceSetDate": "Set a goal date in Settings to see the pace you need.",
+  "dateBad": "The goal date must be after the start date.",
+  "noteLbl": "Goal note (optional)",
+  "notePh": "e.g. Rinjani 100, May 2027",
+  "burnH": "Burn",
+  "kLbl": "Watch factor",
+  "kBase": "Burn = base metabolism (Mifflin–St Jeor, from your weight) × 1.2 for digestion and everyday movement, which COROS doesn't count, + COROS active calories (workouts and brisk walking) × factor. ",
+  "kManual": "Now {k}, set by hand. Clear the field to fit it from your weight trend.",
+  "kWeight": "Now {k}: fitted from your weight trend and logs over {n} days; real burn ≈ {tdee} kcal a day. In the first 2 weeks of a deficit part of the loss is water, so the factor may come out high.",
+  "kDefault": "Now {k} by default: watches usually overestimate. Once 4 weeks hold {w0} weigh-ins and {d0} days with logs and COROS (now {w} and {d}), the factor is fitted from your weight trend.",
+  "targH": "Targets by day type",
+  "targSuggested": "Suggested from your profile and current weight. Change any number and save to keep your own.",
+  "targCustom": "Your own targets. “Use suggested” goes back to values calculated from your profile.",
+  "targHint": "If the 7-day average weight drops less than 0.3 kg a week for 3 weeks in a row, take 150–200 kcal off the easy days. If it drops more than 0.8 kg, or training feels hard, add 200.",
+  "saveSettings": "Save settings",
+  "resetTargets": "Use suggested targets",
+  "setSaved": "Settings saved.",
+  "setBad": "Check the settings: every target must be a number.",
+  "profBad": "Check the profile: age 14–100, height 120–230 cm, weights 30–250 kg.",
+  "kBad": "The factor is a number from 0.3 to 1.5, or leave the field empty.",
+  "stNoClaude": "Storage unavailable: open this page in Claude so entries are saved.",
+  "stNoDb": "Storage isn't available in this view. Entries won't be saved.",
+  "stSignIn": "Sign in to Claude to see and save your entries.",
+  "stLoading": "Loading entries…",
+  "stSlow": "Entries haven't loaded yet. Check the connection: the page keeps trying.",
+  "stRevoked": "Access to entries is closed.",
+  "stLoadFail": "Couldn't load entries. Open the page later.",
+  "stNoWrite": "Storage unavailable, the entry won't be saved.",
+  "stFull": "Storage is full, the entry wasn't saved.",
+  "stNoPerm": "Not saved: this view can't write.",
+  "stFail": "Not saved. Try again.",
+  "cNeedsReauth": "Reconnect COROS: Claude settings → Connectors.",
+  "cNotConnected": "COROS isn't connected: add it in Claude settings → Connectors.",
+  "cSelect": "Several COROS connectors: pick one when Claude asks.",
+  "cApproval": "The page needs your permission to read COROS.",
+  "cOff": "Reading COROS is turned off for this page.",
+  "cPolicy": "Reading COROS is blocked by your organization.",
+  "cUnavailable": "COROS isn't available in this view; showing saved data.",
+  "cDown": "COROS isn't responding; showing the last data.",
+  "cToolErr": "COROS returned an error: {m}",
+  "cParse": "COROS answered, but the data couldn't be read.",
+  "cFail": "Couldn't get COROS data.",
+  "type.rest": "Rest",
+  "type.rest.short": "Rest",
+  "type.rest.hint": "No training.",
+  "type.regular": "Easy",
+  "type.regular.short": "Easy",
+  "type.regular.hint": "Easy run up to 1.5 hours.",
+  "type.key": "Key",
+  "type.key.short": "Key",
+  "type.key.hint": "Intervals, long run or big climbing. Fuel taken during the session comes on top of the target.",
+  "type.maint": "No deficit",
+  "type.maint.short": "No def.",
+  "type.maint.hint": "Taper, race or recovery: eat roughly what you burn.",
+  "type.carb": "Carb load",
+  "type.carb.short": "Carb",
+  "type.carb.hint": "1–2 days before a race: 7–8 g of carbs per kg (rice, noodles, bread, fruit, sweet drinks), little fat and fibre.",
+  "meal.breakfast": "Breakfast",
+  "meal.lunch": "Lunch",
+  "meal.dinner": "Dinner",
+  "meal.snack": "Snack",
+  "meal.workout": "During training",
+  "src.photo": "photo",
+  "src.label": "label",
+  "src.said": "described",
+  "src.manual": "manual",
+  "listSep": ", ",
+  "sep": " · ",
+  "macroP": "P",
+  "macroF": "F",
+  "macroC": "C",
+  "langLbl": "Language",
+  "goalDated": "Goal: {s} → {g} kg by {d}",
+  "paceNowScale": "Last 7 days: {kcal} kcal a day by the log, weight {kg} kg a week by the scale",
+  "paceScaleOnly": "Last 7 days: weight {kg} kg a week by the scale",
+  "ebReadout": "{d}: eaten {e}, burn {b}",
+  "ebReadoutBal": "{d}: eaten {e}, burn {b}, balance {bal}",
+  "ebReadoutRun": "{d}: eaten {e}, burn {b}, balance {bal} (day in progress)",
+  "wReadoutPlan": "{d}: {w} kg, 7-day average {a}, plan {p}",
+  "approx": "≈ {v} kcal",
+  "kcalVal": "{v} kcal",
+  "langHint": "To add a language, ask Claude in chat: “Translate my nutrition log into …”."
+}
+</script>
 <script>
 (function () {
   "use strict";
 
   // ---------- text ----------
-  var STR = {
-    en: {
-      title: "Food, weight & burn",
-      goal: "Goal: {s} → {g} kg", goalBy: " by {d}", goalNone: "Set your start and goal weight in Settings",
-      progressNone: "Log your morning weight to see progress",
-      progressNow: "Now {w} kg ({src}), {delta} of {total} kg", src7: "7-day average", srcLast: "last weigh-in",
-      lost: "lost {x}", gained: "up {x}",
-      onbText: "Welcome! Start with your profile in Settings at the bottom of the page: sex, age, height and weight. Daily targets and burn are calculated from it.",
-      onbBtn: "Open settings",
-      prevDay: "Previous day", nextDay: "Next day", backToday: "Back to today", dayType: "Day type",
-      typePick: "Pick the day type. Until then the Easy day target is used.",
-      kcal: "kcal", left: "{n} kcal left", over: "{n} kcal over target",
-      burn: "Burn", balance: "Balance", burnParts: "base {b} + watch {a} × {k}",
-      dayRunning: "day in progress", corosAt: "COROS at {t}",
-      corosNoDay: "No COROS data for this day.", corosNotYet: "COROS hasn't returned this day yet.",
-      corosBtn: "Allow reading COROS",
-      barKcal: "Kcal", barP: "Protein", barF: "Fat", barC: "Carbs", g: "g",
-      weightLbl: "Morning weight, kg", weightPh: "e.g. 94.6", save: "Save", weightBad: "Weight should be a number, e.g. 94.6.",
-      foodH: "Food log", mealsEmpty: "Nothing yet. Send a food photo to Claude in chat or add it manually.",
-      edit: "Edit", del: "Delete", delSure: "Delete?", mealFallback: "Meal",
-      addManual: "Add manually", editEntry: "Edit entry",
-      mealLbl: "Meal", timeLbl: "Time", whatLbl: "What you ate", whatPh: "rice 200 g, chicken 150 g",
-      kcalLbl: "Kcal", pLbl: "Protein, g", fLbl: "Fat, g", cLbl: "Carbs, g", autoPh: "auto",
-      autoHint: "Without kcal they are computed from macros: 4 × protein + 9 × fat + 4 × carbs.",
-      add: "Add", saveChanges: "Save changes", cancel: "Cancel", needKcal: "Enter kcal or at least the macros.",
-      dayHint: "Send food photos to Claude in chat: it estimates them and logs them here. A photo estimate is about ±25% per plate. Days run from midnight to midnight, the same as COROS counts calories. Burn comes from COROS with a correction (see Settings).",
-      weekH: "Last 7 days",
-      tAvgK: "Eaten, average", tAvgKs: "target {t} · days: {n}", noLogs: "no logs",
-      tBal: "Balance, week", tBalS: "≈ {kg} kg · days: {n}", tBalNone: "needs logs and COROS",
-      tAvgW: "Weight, average", tAvgWs: "weigh-ins: {n}", noWeigh: "no weigh-ins",
-      tDelta: "vs last week", tDeltaS: "kg per week", tDeltaNone: "needs 2 weeks of weigh-ins",
-      thDay: "Day", thType: "Day type", thKcal: "Kcal / target", thBal: "Balance", thP: "P, g", thF: "F, g", thC: "C, g", thW: "Weight", thEat: "Eaten", thBurn: "Burn",
-      legOk: "±7% of target", legOver: "above target", legLow: "under 80%: something not logged?",
-      balHint: "Balance = eaten − burned: minus means a deficit. 7,700 kcal of deficit ≈ 1 kg of fat. Today's balance is grey: the day isn't over.",
-      ebH: "Eaten and burned, 14 days", keyEat: "Eaten", keyBurn: "Burn: COROS with correction",
-      ebTable: "As a table", ebHint: "Tap a day to open it above. A hollow dot is today: the watch is still counting and food may not all be logged yet.",
-      ebEmpty: "No logs or COROS data in the last 14 days yet.", ebAria: "Eaten and burned per day for 14 days; details in the table below",
-      ebEaten: "eaten", ebBurn: "burn", ebBal: "balance", ebRunning: "(day in progress)",
-      wH: "Weight", wEmpty: "Weigh yourself in the morning before eating and log it. Dots and a 7-day average will appear here.",
-      wHint: "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
-      wReadout: "{d}: {w} kg, 7-day average {a}", goalShort: "goal", wAria: "Morning weight and 7-day average",
-      setH: "Settings and targets", profH: "Profile",
-      sexLbl: "Sex", male: "Male", female: "Female", ageLbl: "Age", heightLbl: "Height, cm",
-      startLbl: "Start, kg", goalLblW: "Goal, kg", startDateLbl: "Start date", goalDateLbl: "Goal date",
-      dateHint: "The plan runs from the start weight on the start date to the goal weight on the goal date. For a race, set the goal date 2–3 weeks before it, so the taper and race week are at maintenance.",
-      paceNeed: "Needed: {kg} kg a week ≈ {kcal} kcal a day until {d} ({n} days)",
-      paceNow: "Last 7 days: {kcal} kcal a day by the log", paceTrend: ", weight {kg} kg a week by the scale",
-      paceNoData: "Last 7 days: not enough logs and COROS data yet",
-      paceFast: "That's over 0.75% of body weight a week: consider a later date or a closer goal.",
-      paceDone: "Goal reached.", pacePast: "The goal date has passed: set a new one in Settings.",
-      paceSetDate: "Set a goal date in Settings to see the pace you need.",
-      planShort: "plan {p}", dateBad: "The goal date must be after the start date.", noteLbl: "Goal note (optional)", notePh: "e.g. Rinjani 100, May 2027",
-      burnH: "Burn", kLbl: "Watch factor",
-      kBase: "Burn = base metabolism (Mifflin–St Jeor, from your weight) × 1.2 for digestion and everyday movement, which COROS doesn't count, + COROS active calories (workouts and brisk walking) × factor. ",
-      kManual: "Now {k}, set by hand. Clear the field to fit it from your weight trend.",
-      kWeight: "Now {k}: fitted from your weight trend and logs over {n} days; real burn ≈ {tdee} kcal a day. In the first 2 weeks of a deficit part of the loss is water, so the factor may come out high.",
-      kDefault: "Now {k} by default: watches usually overestimate. Once 4 weeks hold {w0} weigh-ins and {d0} days with logs and COROS (now {w} and {d}), the factor is fitted from your weight trend.",
-      targH: "Targets by day type", targSuggested: "Suggested from your profile and current weight. Change any number and save to keep your own.",
-      targCustom: "Your own targets. “Use suggested” goes back to values calculated from your profile.",
-      targHint: "If the 7-day average weight drops less than 0.3 kg a week for 3 weeks in a row, take 150–200 kcal off the easy days. If it drops more than 0.8 kg, or training feels hard, add 200.",
-      saveSettings: "Save settings", resetTargets: "Use suggested targets",
-      setSaved: "Settings saved.", setBad: "Check the settings: every target must be a number.",
-      profBad: "Check the profile: age 14–100, height 120–230 cm, weights 30–250 kg.",
-      kBad: "The factor is a number from 0.3 to 1.5, or leave the field empty.",
-      stNoClaude: "Storage unavailable: open this page in Claude so entries are saved.",
-      stNoDb: "Storage isn't available in this view. Entries won't be saved.",
-      stSignIn: "Sign in to Claude to see and save your entries.",
-      stLoading: "Loading entries…", stSlow: "Entries haven't loaded yet. Check the connection: the page keeps trying.",
-      stRevoked: "Access to entries is closed.", stLoadFail: "Couldn't load entries. Open the page later.",
-      stNoWrite: "Storage unavailable, the entry won't be saved.",
-      stFull: "Storage is full, the entry wasn't saved.", stNoPerm: "Not saved: this view can't write.", stFail: "Not saved. Try again.",
-      cNeedsReauth: "Reconnect COROS: Claude settings → Connectors.",
-      cNotConnected: "COROS isn't connected: add it in Claude settings → Connectors.",
-      cSelect: "Several COROS connectors: pick one when Claude asks.",
-      cApproval: "The page needs your permission to read COROS.",
-      cOff: "Reading COROS is turned off for this page.", cPolicy: "Reading COROS is blocked by your organization.",
-      cUnavailable: "COROS isn't available in this view; showing saved data.",
-      cDown: "COROS isn't responding; showing the last data.",
-      cToolErr: "COROS returned an error: {m}", cParse: "COROS answered, but the data couldn't be read.", cFail: "Couldn't get COROS data."
-    },
-    ru: {
-      title: "Питание, вес и расход",
-      goal: "Цель: {s} → {g} кг", goalBy: " к {d}", goalNone: "Укажи стартовый и целевой вес в настройках",
-      progressNone: "Впиши вес утром, чтобы видеть прогресс",
-      progressNow: "Сейчас {w} кг ({src}), {delta} из {total} кг", src7: "в среднем за 7 дней", srcLast: "последнее взвешивание",
-      lost: "сброшено {x}", gained: "плюс {x}",
-      onbText: "Привет! Начни с профиля в настройках внизу страницы: пол, возраст, рост и вес. От них считаются цели на день и расход.",
-      onbBtn: "Открыть настройки",
-      prevDay: "Предыдущий день", nextDay: "Следующий день", backToday: "Вернуться к сегодня", dayType: "Тип дня",
-      typePick: "Выбери тип дня. Пока цель считается как для обычного.",
-      kcal: "ккал", left: "Осталось {n} ккал", over: "Сверх цели на {n} ккал",
-      burn: "Расход", balance: "Баланс", burnParts: "база {b} + часы {a} × {k}",
-      dayRunning: "день идёт", corosAt: "COROS на {t}",
-      corosNoDay: "Нет данных COROS за этот день.", corosNotYet: "COROS пока не отдал данные за этот день.",
-      corosBtn: "Разрешить чтение COROS",
-      barKcal: "Ккал", barP: "Белок", barF: "Жиры", barC: "Углеводы", g: "г",
-      weightLbl: "Вес утром, кг", weightPh: "например, 94,6", save: "Сохранить", weightBad: "Вес должен быть числом, например 94,6.",
-      foodH: "Еда за день", mealsEmpty: "Пока пусто. Пришли фото еды в чат или добавь вручную.",
-      edit: "Изменить", del: "Удалить", delSure: "Точно удалить?", mealFallback: "Приём пищи",
-      addManual: "Добавить вручную", editEntry: "Изменить запись",
-      mealLbl: "Приём пищи", timeLbl: "Время", whatLbl: "Что съел", whatPh: "рис 200 г, курица 150 г",
-      kcalLbl: "Ккал", pLbl: "Белок, г", fLbl: "Жиры, г", cLbl: "Углев., г", autoPh: "авто",
-      autoHint: "Если ккал не указаны, посчитаю из БЖУ: 4 × белок + 9 × жиры + 4 × углеводы.",
-      add: "Добавить", saveChanges: "Сохранить изменения", cancel: "Отменить", needKcal: "Укажи калории или хотя бы БЖУ.",
-      dayHint: "Фото еды присылай в чат: Claude оценит и запишет сюда. Оценка по фото даёт ±25% на тарелку. День длится от полуночи до полуночи, как COROS считает калории. Расход берётся из COROS с поправкой (см. настройки).",
-      weekH: "Последние 7 дней",
-      tAvgK: "Съедено в среднем", tAvgKs: "цель {t} · дней: {n}", noLogs: "нет записей",
-      tBal: "Баланс за неделю", tBalS: "≈ {kg} кг · дней: {n}", tBalNone: "нужны записи и COROS",
-      tAvgW: "Вес в среднем", tAvgWs: "взвешиваний: {n}", noWeigh: "нет взвешиваний",
-      tDelta: "К прошлой неделе", tDeltaS: "кг за неделю", tDeltaNone: "нужны 2 недели взвешиваний",
-      thDay: "День", thType: "Тип", thKcal: "Ккал / цель", thBal: "Баланс", thP: "Б, г", thF: "Ж, г", thC: "У, г", thW: "Вес", thEat: "Съедено", thBurn: "Расход",
-      legOk: "±7% от цели", legOver: "выше цели", legLow: "меньше 80%: записано не всё?",
-      balHint: "Баланс = съедено − расход: минус значит дефицит. 7700 ккал дефицита ≈ 1 кг жира. Сегодняшний баланс серым: день ещё идёт.",
-      ebH: "Съедено и расход за 14 дней", keyEat: "Съедено", keyBurn: "Расход: COROS с поправкой",
-      ebTable: "Таблицей", ebHint: "Нажми на день, чтобы открыть его выше. Пустой кружок — сегодня: часы ещё досчитывают, а еда, может, не вся записана.",
-      ebEmpty: "Пока нет ни записей, ни данных COROS за последние 14 дней.", ebAria: "Съедено и расход по дням за 14 дней; подробности в таблице ниже",
-      ebEaten: "съедено", ebBurn: "расход", ebBal: "баланс", ebRunning: "(день идёт)",
-      wH: "Вес", wEmpty: "Взвешивайся утром натощак и вписывай вес. Здесь появятся точки и среднее за 7 дней.",
-      wHint: "Точки — утренние взвешивания, линия — среднее за 7 дней, пунктир — план до цели. Смотри на среднее: дневной вес скачет на 0,5–1,5 кг от воды и соли.",
-      wReadout: "{d}: {w} кг, среднее за 7 дней {a}", goalShort: "цель", wAria: "Утренний вес и среднее за 7 дней",
-      setH: "Настройки и цели", profH: "Профиль",
-      sexLbl: "Пол", male: "Мужской", female: "Женский", ageLbl: "Возраст", heightLbl: "Рост, см",
-      startLbl: "Старт, кг", goalLblW: "Цель, кг", startDateLbl: "Дата старта", goalDateLbl: "Дата цели",
-      dateHint: "План идёт от стартового веса в дату старта к целевому весу в дату цели. Если цель — гонка, ставь дату цели за 2–3 недели до неё, чтобы подводка и неделя гонки были без дефицита.",
-      paceNeed: "Нужно: {kg} кг в неделю ≈ {kcal} ккал в день до {d} ({n} дн.)",
-      paceNow: "За 7 дней: {kcal} ккал в день по записям", paceTrend: ", вес {kg} кг в неделю по весам",
-      paceNoData: "За 7 дней: пока мало записей и данных COROS",
-      paceFast: "Это быстрее 0,75% веса в неделю: стоит сдвинуть дату или цель.",
-      paceDone: "Цель достигнута.", pacePast: "Дата цели прошла: задай новую в настройках.",
-      paceSetDate: "Укажи дату цели в настройках, чтобы видеть нужный темп.",
-      planShort: "план {p}", dateBad: "Дата цели должна быть позже даты старта.", noteLbl: "Подпись к цели (необязательно)", notePh: "например, Rinjani 100, май 2027",
-      burnH: "Расход", kLbl: "Коэфф. к часам",
-      kBase: "Расход = базовый обмен (формула Миффлина — Сан Жеора, от веса) × 1,2 на пищеварение и обычные движения, которые COROS не считает, + активные калории COROS (тренировки и быстрая ходьба) × коэффициент. ",
-      kManual: "Сейчас {k}, задан вручную. Очисти поле, чтобы коэффициент подбирался по весу.",
-      kWeight: "Сейчас {k}: подобран по тренду веса и записям за {n} дн., реальный расход ≈ {tdee} ккал в день. В первые 2 недели дефицита часть потери — вода, коэффициент может выйти завышенным.",
-      kDefault: "Сейчас {k} по умолчанию: часы обычно завышают. Когда за 4 недели наберётся {w0} взвешиваний и {d0} дней с записями и COROS (сейчас {w} и {d}), коэффициент подстроится по тренду веса.",
-      targH: "Цели по типам дней", targSuggested: "Посчитаны по профилю и текущему весу. Измени любое число и сохрани, чтобы оставить свои.",
-      targCustom: "Твои цели. «Взять рассчитанные» вернёт значения по профилю.",
-      targHint: "Если 3 недели подряд средний вес падает меньше чем на 0,3 кг в неделю, убери 150–200 ккал у обычных дней. Если больше 0,8 кг или тренировки идут тяжело, добавь 200.",
-      saveSettings: "Сохранить настройки", resetTargets: "Взять рассчитанные цели",
-      setSaved: "Настройки сохранены.", setBad: "Проверь цели: везде должны быть числа.",
-      profBad: "Проверь профиль: возраст 14–100, рост 120–230 см, вес 30–250 кг.",
-      kBad: "Коэффициент — число от 0,3 до 1,5, или оставь поле пустым.",
-      stNoClaude: "Хранилище недоступно: открой страницу в Claude, чтобы записи сохранялись.",
-      stNoDb: "Хранилище недоступно в этом просмотре. Записи не сохранятся.",
-      stSignIn: "Войди в аккаунт Claude, чтобы видеть и сохранять свои записи.",
-      stLoading: "Загружаю записи…", stSlow: "Записи пока не загрузились. Проверь связь: страница продолжает пробовать сама.",
-      stRevoked: "Доступ к записям закрыт.", stLoadFail: "Не удалось загрузить записи. Открой страницу позже.",
-      stNoWrite: "Хранилище недоступно, запись не сохранится.",
-      stFull: "Хранилище заполнено, запись не сохранилась.", stNoPerm: "Запись не сохранилась: нет прав на запись в этом просмотре.", stFail: "Запись не сохранилась. Попробуй ещё раз.",
-      cNeedsReauth: "COROS надо переподключить: настройки Claude → Connectors.",
-      cNotConnected: "COROS не подключён: добавь его в настройках Claude → Connectors.",
-      cSelect: "Подключено несколько COROS: выбери один в запросе Claude.",
-      cApproval: "Странице нужно разрешение читать COROS.",
-      cOff: "Чтение COROS для этой страницы выключено.", cPolicy: "Чтение COROS запрещено настройками организации.",
-      cUnavailable: "В этом просмотре COROS недоступен, показываю сохранённые данные.",
-      cDown: "COROS сейчас не отвечает, показываю последние данные.",
-      cToolErr: "COROS вернул ошибку: {m}", cParse: "COROS ответил, но данные не разобрались.", cFail: "Не удалось получить данные COROS."
-    }
-  };
-  var TYPE_TEXT = {
-    en: {
-      label: { rest: "Rest", regular: "Easy", key: "Key", maint: "No deficit", carb: "Carb load" },
-      short: { rest: "Rest", regular: "Easy", key: "Key", maint: "No def.", carb: "Carb" },
-      hint: {
-        rest: "No training.",
-        regular: "Easy run up to 1.5 hours.",
-        key: "Intervals, long run or big climbing. Fuel taken during the session comes on top of the target.",
-        maint: "Taper, race or recovery: eat roughly what you burn.",
-        carb: "1–2 days before a race: 7–8 g of carbs per kg (rice, noodles, bread, fruit, sweet drinks), little fat and fibre."
-      }
-    },
-    ru: {
-      label: { rest: "Отдых", regular: "Обычная", key: "Ключевая", maint: "Без дефицита", carb: "Углеводная загрузка" },
-      short: { rest: "Отдых", regular: "Обычн.", key: "Ключ.", maint: "Без деф.", carb: "Загрузка" },
-      hint: {
-        rest: "День без тренировки.",
-        regular: "Пробежка до 1,5 часа в лёгком темпе.",
-        key: "Интервалы, длинная или большой набор. Питание во время тренировки идёт сверх цели.",
-        maint: "Подводка, гонка или восстановление: ешь примерно на расход.",
-        carb: "1–2 дня перед гонкой: 7–8 г углеводов на кг (рис, лапша, хлеб, фрукты, сладкие напитки), мало жира и клетчатки."
-      }
-    }
-  };
-  // Meals and sources are stored as keys; older entries may hold Russian or English words.
+  // English is built in (#i18n-en). Other languages are translation documents ("i18n-<lang>")
+  // in the user's own storage, written by Claude following TRANSLATING.md.
+  var EN = JSON.parse(document.getElementById("i18n-en").textContent);
   var MEAL_KEYS = ["breakfast", "lunch", "dinner", "snack", "workout"];
-  var MEAL_TEXT = {
-    en: { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snack: "Snack", workout: "During training" },
-    ru: { breakfast: "Завтрак", lunch: "Обед", dinner: "Ужин", snack: "Перекус", workout: "На тренировке" }
+  var SRC_KEYS = ["photo", "label", "said", "manual"];
+
+  var state = {
+    lang: "en", locale: "en-US", dir: "ltr", tr: null, trSig: "",
+    col: null, docs: new Map(), selected: null, editing: null, loaded: false, settingsDirty: false,
+    mcp: null, coros: new Map(), corosAt: null, corosErr: null, corosAsk: false, syncing: new Map()
   };
-  var SRC_TEXT = {
-    en: { photo: "photo", label: "label", said: "described", manual: "manual" },
-    ru: { photo: "фото", label: "этикетка", said: "со слов", manual: "вручную" }
-  };
-  function keyOf(map, v) {
+  var plural = null;
+
+  function placeholdersOf(str) { var out = [], m, re = /\{(\w+)\}/g; while ((m = re.exec(str))) out.push(m[1]); return out; }
+  // A translated value is used only if it keeps every placeholder of the English text.
+  function usable(key, v) {
+    if (v === undefined || v === null) return false;
+    var enV = EN[key], enText = enV && typeof enV === "object" ? (enV.other || "") : String(enV || "");
+    var need = placeholdersOf(enText);
+    function has(x, list) { return typeof x === "string" && list.every(function (ph) { return x.indexOf("{" + ph + "}") >= 0; }); }
+    if (typeof v !== "object") return has(v, need);
+    // Plural forms: "other" keeps every placeholder; the other forms may drop {n} ("one day", "two days").
+    if (!has(v.other, need)) return false;
+    var rest = need.filter(function (ph) { return ph !== "n"; });
+    return Object.keys(v).every(function (k) { return has(v[k], rest); });
+  }
+  function raw(key) {
+    var v = state.tr && state.tr.strings ? state.tr.strings[key] : undefined;
+    return usable(key, v) ? v : EN[key];
+  }
+  function iso1(v) { return state.dir === "rtl" ? "⁨" + v + "⁩" : v; }
+  function pick(v, vars) {
+    if (v && typeof v === "object") {
+      var cat = vars && vars.n !== undefined && plural ? plural.select(Number(vars.n)) : "other";
+      v = typeof v[cat] === "string" ? v[cat] : v.other;
+    }
+    return typeof v === "string" ? v : null;
+  }
+  function t(key, vars) {
+    var s = pick(raw(key), vars);
+    if (s === null) return key;
+    if (vars) s = s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] !== undefined ? iso1(String(vars[k])) : m; });
+    return s;
+  }
+  // Same as t(), but returns nodes with the substituted values in bold (for readouts).
+  function tBold(key, vars) {
+    var s = pick(raw(key), vars) || key, frag = document.createDocumentFragment(), last = 0, m, re = /\{(\w+)\}/g;
+    while ((m = re.exec(s))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+      var b = document.createElement("b");
+      b.textContent = vars && vars[m[1]] !== undefined ? String(vars[m[1]]) : m[0];
+      frag.appendChild(b);
+      last = re.lastIndex;
+    }
+    if (last < s.length) frag.appendChild(document.createTextNode(s.slice(last)));
+    return frag;
+  }
+  function typeLabel(k) { return t("type." + k); }
+  function typeShort(k) { return t("type." + k + ".short"); }
+  function typeHint(k) { return t("type." + k + ".hint"); }
+  // Meals and sources are stored as keys; older entries may hold a word in some language.
+  function keyOf(prefix, keys, v) {
     v = String(v || "");
-    if (map.en[v] !== undefined || map.ru[v] !== undefined) return v;
-    var found = null;
-    ["en", "ru"].forEach(function (lg) {
-      Object.keys(map[lg]).forEach(function (k) { if (!found && map[lg][k].toLowerCase() === v.toLowerCase()) found = k; });
+    if (keys.indexOf(v) >= 0) return v;
+    var low = v.toLowerCase(), found = null;
+    keys.forEach(function (k) {
+      if (found) return;
+      var cands = [EN[prefix + k]];
+      if (state.tr && state.tr.strings) cands.push(pick(state.tr.strings[prefix + k]));
+      if (cands.some(function (c) { return typeof c === "string" && c.toLowerCase() === low; })) found = k;
     });
     return found;
   }
-
-  var state = {
-    lang: "en", col: null, docs: new Map(), selected: null, editing: null, loaded: false, settingsDirty: false,
-    mcp: null, coros: new Map(), corosAt: null, corosErr: null, corosAsk: false, syncing: new Map()
-  };
-  // Language: the saved setting wins once loaded (Claude sets it at setup to the language you chat in).
-  // Before that: the last choice cached in this browser, else the browser or app language.
-  (function () {
-    var cached = null;
-    try { cached = window.localStorage.getItem("nutrition-log-lang"); } catch (e) {}
-    if (cached === "ru" || cached === "en") { state.lang = cached; return; }
-    var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "";
-    state.lang = /^ru\b/i.test(nav) ? "ru" : "en";
-  })();
-
-  function t(key, vars) {
-    var s = (STR[state.lang] && STR[state.lang][key]);
-    if (s === undefined) s = STR.en[key];
-    if (s === undefined) s = key;
-    if (vars) s = s.replace(/\{(\w+)\}/g, function (m, k) { return vars[k] !== undefined ? String(vars[k]) : m; });
-    return s;
-  }
-  function typeLabel(k) { return TYPE_TEXT[state.lang].label[k]; }
-  function typeShort(k) { return TYPE_TEXT[state.lang].short[k]; }
-  function typeHint(k) { return TYPE_TEXT[state.lang].hint[k]; }
 
   // ---------- constants ----------
   var TYPES = ["rest", "regular", "key", "maint", "carb"];
@@ -642,7 +699,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
   var F = {};
   function buildFormats() {
-    var loc = state.lang === "ru" ? "ru-RU" : "en-US";
+    var loc = state.locale;
     F.n0 = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
     F.n1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     F.n2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -667,9 +724,20 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   // Days run from midnight to midnight in local time, the same as COROS counts calories.
   function today() { return iso(new Date()); }
   function sortKey(tm) { tm = String(tm || ""); return /^\d{2}:\d{2}/.test(tm) ? tm : "99:99"; }
+  // Zero code points of decimal digit sets people may type (Arabic-Indic, Persian, Devanagari, Bengali, Thai, full-width…).
+  var DIGIT_ZEROS = [0x0660, 0x06F0, 0x07C0, 0x0966, 0x09E6, 0x0A66, 0x0AE6, 0x0B66, 0x0BE6, 0x0C66, 0x0CE6, 0x0D66, 0x0E50, 0x0ED0, 0x0F20, 0x1040, 0x17E0, 0x1810, 0xFF10];
+  function latinDigits(str) {
+    var out = "";
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i), d = null;
+      for (var j = 0; j < DIGIT_ZEROS.length; j++) if (c >= DIGIT_ZEROS[j] && c <= DIGIT_ZEROS[j] + 9) { d = c - DIGIT_ZEROS[j]; break; }
+      out += d !== null ? String(d) : str.charAt(i);
+    }
+    return out.replace(/\u066B/g, ".").replace(/\u066C/g, "");
+  }
   function num(v) {
     if (v === null || v === undefined) return NaN;
-    var s = String(v).replace(",", ".").trim();
+    var s = latinDigits(String(v)).replace(",", ".").trim();
     if (s === "") return NaN;
     return Number(s);
   }
@@ -941,18 +1009,27 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   // ---------- rendering ----------
   function applyStatic() {
     document.documentElement.lang = state.lang;
+    document.documentElement.dir = state.dir;
     document.querySelectorAll("[data-i18n]").forEach(function (n) { n.textContent = t(n.getAttribute("data-i18n")); });
     document.querySelectorAll("[data-i18n-ph]").forEach(function (n) { n.setAttribute("placeholder", t(n.getAttribute("data-i18n-ph"))); });
     document.querySelectorAll("[data-i18n-aria]").forEach(function (n) { n.setAttribute("aria-label", t(n.getAttribute("data-i18n-aria"))); });
-    $("#sLang").value = state.lang;
+    fillLangs();
+    var own = state.tr && state.tr.strings ? pick(state.tr.strings.langLbl) : null;
+    $("#sLangLbl").textContent = own && own !== EN.langLbl ? EN.langLbl + t("sep") + own : EN.langLbl;
     fillTitles();
   }
 
   function renderHeader() {
     var s = settings();
-    var line = s.startWeight !== null && s.goalWeight !== null ? t("goal", { s: trim1(s.startWeight), g: trim1(s.goalWeight) }) : t("goalNone");
-    if (s.goalDate && s.goalWeight !== null) line += t("goalBy", { d: F.date.format(parseIso(s.goalDate)) });
-    if (s.goalNote) line += " · " + s.goalNote;
+    var line;
+    if (s.startWeight !== null && s.goalWeight !== null) {
+      line = s.goalDate
+        ? t("goalDated", { s: trim1(s.startWeight), g: trim1(s.goalWeight), d: F.date.format(parseIso(s.goalDate)) })
+        : t("goal", { s: trim1(s.startWeight), g: trim1(s.goalWeight) });
+    } else {
+      line = t("goalNone");
+    }
+    if (s.goalNote) line += t("sep") + s.goalNote;
     $("#goalLine").textContent = line;
     $("#onb").hidden = !state.loaded || profileComplete();
     renderPace();
@@ -989,8 +1066,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var ap = actualPace();
     now.hidden = false;
     if (ap.kcalDay === null && ap.kgWeek === null) { now.textContent = t("paceNoData"); return; }
-    var parts = ap.kcalDay !== null ? t("paceNow", { kcal: signed(ap.kcalDay) }) : t("paceNoData");
-    if (ap.kgWeek !== null) parts += t("paceTrend", { kg: (ap.kgWeek > 0 ? "+" : ap.kgWeek < 0 ? "−" : "") + F.n2.format(Math.abs(ap.kgWeek)) });
+    var kgTxt = ap.kgWeek !== null ? (ap.kgWeek > 0 ? "+" : ap.kgWeek < 0 ? "−" : "") + F.n2.format(Math.abs(ap.kgWeek)) : null;
+    var parts = ap.kcalDay !== null && kgTxt !== null ? t("paceNowScale", { kcal: signed(ap.kcalDay), kg: kgTxt })
+      : ap.kcalDay !== null ? t("paceNow", { kcal: signed(ap.kcalDay) })
+      : t("paceScaleOnly", { kg: kgTxt });
     now.textContent = parts;
     // The scale trend is the ground truth when there are enough weigh-ins; otherwise judge by the logged balance.
     if (ap.kgWeek !== null) now.classList.add(-ap.kgWeek >= pc.kgWeek * 0.9 ? "ok" : "warn");
@@ -1022,27 +1101,27 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var cal = calibration(), b = burnOn(date, cal), isToday = date === today();
     var lines = [];
     if (b) {
-      $("#burnTotal").textContent = "≈ " + fmt(b.total) + " " + t("kcal");
-      $("#burnBal").textContent = signed(eaten - b.total) + " " + t("kcal");
+      $("#burnTotal").textContent = t("approx", { v: fmt(b.total) });
+      $("#burnBal").textContent = t("kcalVal", { v: signed(eaten - b.total) });
       lines.push(t("burnParts", { b: fmt(b.bmr), a: fmt(b.active), k: F.n2.format(cal.k) }));
-      if (isToday) lines.push(t("dayRunning") + (state.corosAt ? ", " + t("corosAt", { t: F.time.format(new Date(state.corosAt)) }) : ""));
+      if (isToday) lines.push(t("dayRunning") + (state.corosAt ? t("listSep") + t("corosAt", { t: F.time.format(new Date(state.corosAt)) }) : ""));
       if (isToday && state.corosErr) lines.push(corosMsg());
     } else {
       $("#burnTotal").textContent = "—";
       $("#burnBal").textContent = "—";
       lines.push(state.corosErr ? corosMsg() : state.mcp ? t("corosNotYet") : t("corosNoDay"));
     }
-    $("#burnHint").textContent = lines.join(" · ");
+    $("#burnHint").textContent = lines.join(t("sep"));
     $("#corosAct").hidden = !state.corosAsk;
   }
 
   function mealTitle(d) {
-    var k = keyOf(MEAL_TEXT, d.title);
-    return k ? MEAL_TEXT[state.lang][k] : String(d.title || t("mealFallback"));
+    var k = keyOf("meal.", MEAL_KEYS, d.title);
+    return k ? t("meal." + k) : String(d.title || t("mealFallback"));
   }
   function srcTitle(v) {
-    var k = keyOf(SRC_TEXT, v);
-    return k ? SRC_TEXT[state.lang][k] : String(v);
+    var k = keyOf("src.", SRC_KEYS, v);
+    return k ? t("src." + k) : String(v);
   }
 
   var pendingDelete = null, deleteTimer = null;
@@ -1065,7 +1144,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (d.desc) main.appendChild(el("div", "meal-desc", String(d.desc)));
       if (d.note) main.appendChild(el("div", "meal-note", String(d.note)));
       var mac = [];
-      var L = state.lang === "ru" ? ["Б", "Ж", "У"] : ["P", "F", "C"];
+      var L = [t("macroP"), t("macroF"), t("macroC")];
       if (finite(d.p)) mac.push(L[0] + " " + fmt(d.p));
       if (finite(d.f)) mac.push(L[1] + " " + fmt(d.f));
       if (finite(d.c)) mac.push(L[2] + " " + fmt(d.c));
@@ -1313,14 +1392,12 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       ebFocus = i;
       var r = rows[i];
       ro.textContent = "";
-      ro.appendChild(document.createTextNode(cap(F.day.format(parseIso(r.date))) + ": " + t("ebEaten") + " "));
-      ro.appendChild(el("b", "", r.eat !== null ? fmt(r.eat) : "—"));
-      ro.appendChild(document.createTextNode(", " + t("ebBurn") + " "));
-      ro.appendChild(el("b", "", r.burn !== null ? "≈ " + fmt(r.burn) : "—"));
+      var v = { d: cap(F.day.format(parseIso(r.date))), e: r.eat !== null ? fmt(r.eat) : "—", b: r.burn !== null ? "≈ " + fmt(r.burn) : "—" };
       if (r.eat !== null && r.burn !== null) {
-        ro.appendChild(document.createTextNode(", " + t("ebBal") + " "));
-        ro.appendChild(el("b", "", signed(r.eat - r.burn) + " " + t("kcal")));
-        if (r.partial) ro.appendChild(document.createTextNode(" " + t("ebRunning")));
+        v.bal = t("kcalVal", { v: signed(r.eat - r.burn) }).replace(/[\u2068\u2069]/g, "");
+        ro.appendChild(tBold(r.partial ? "ebReadoutRun" : "ebReadoutBal", v));
+      } else {
+        ro.appendChild(tBold("ebReadout", v));
       }
       if (cursor) {
         var x = cx(i).toFixed(1);
@@ -1412,9 +1489,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var svg = box.querySelector("svg"), cl = box.querySelector("#cursorLine");
     svg.setAttribute("aria-label", t("wAria"));
     function show(i) {
-      var txt = t("wReadout", { d: cap(F.day.format(parseIso(ws[i].date))), w: fmt1(ws[i].w), a: fmt1(roll[i]) });
-      if (pl && ts[i] >= pl.t0 && ts[i] <= pl.t1) txt += ", " + t("planShort", { p: fmt1(pl.at(ts[i])) });
-      ro.textContent = txt;
+      var wv = { d: cap(F.day.format(parseIso(ws[i].date))), w: fmt1(ws[i].w), a: fmt1(roll[i]) };
+      if (pl && ts[i] >= pl.t0 && ts[i] <= pl.t1) { wv.p = fmt1(pl.at(ts[i])); ro.textContent = t("wReadoutPlan", wv); }
+      else ro.textContent = t("wReadout", wv);
     }
     show(ws.length - 1);
     function move(e) {
@@ -1495,7 +1572,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function fillTitles() {
     var sel = $("#mTitle"), cur = sel.value;
     sel.textContent = "";
-    MEAL_KEYS.forEach(function (k) { var o = el("option", "", MEAL_TEXT[state.lang][k]); o.value = k; sel.appendChild(o); });
+    MEAL_KEYS.forEach(function (k) { var o = el("option", "", t("meal." + k)); o.value = k; sel.appendChild(o); });
     if (cur) {
       if (MEAL_KEYS.indexOf(cur) < 0) { var o = el("option", "", cur); o.value = cur; sel.appendChild(o); }
       sel.value = cur;
@@ -1521,7 +1598,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     if (!d) return;
     state.editing = id;
     fillTitles();
-    var sel = $("#mTitle"), k = keyOf(MEAL_TEXT, d.title);
+    var sel = $("#mTitle"), k = keyOf("meal.", MEAL_KEYS, d.title);
     if (!k && d.title) { var o = el("option", "", String(d.title)); o.value = String(d.title); sel.appendChild(o); }
     sel.value = k || d.title || guessTitle();
     $("#mTime").value = d.time || "";
@@ -1726,19 +1803,90 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
 
   // ---------- language ----------
-  function setLang(lang, persist) {
-    if (lang !== "en" && lang !== "ru") return;
-    var changed = state.lang !== lang;
-    state.lang = lang;
-    try { window.localStorage.setItem("nutrition-log-lang", lang); } catch (e) {}
-    if (changed) {
-      buildFormats();
-      applyStatic();
-      if (!state.editing) resetForm();
-      renderAll();
-    }
-    if (persist) saveLang(lang);
+  function translations() {
+    var out = [];
+    state.docs.forEach(function (d, id) {
+      if (d && d.kind === "i18n" && /^i18n-/.test(id) && typeof d.lang === "string" && d.strings && typeof d.strings === "object") out.push(d);
+    });
+    out.sort(function (a, b) { return String(a.name || a.lang).localeCompare(String(b.name || b.lang)); });
+    return out;
   }
+  function findTranslation(lang) {
+    if (!lang || lang === "en") return null;
+    var list = translations();
+    for (var i = 0; i < list.length; i++) if (list[i].lang === lang) return list[i];
+    var primary = String(lang).split("-")[0].toLowerCase();
+    for (var j = 0; j < list.length; j++) if (String(list[j].lang).split("-")[0].toLowerCase() === primary) return list[j];
+    return null;
+  }
+  // The saved setting wins; without one, the browser or app language if there is a translation for it.
+  function wantedLang() {
+    var s = rawSettings().lang;
+    if (typeof s === "string" && s) return s;
+    var nav = (navigator.languages && navigator.languages[0]) || navigator.language || "en";
+    return findTranslation(nav) ? findTranslation(nav).lang : "en";
+  }
+  function safeLocale(tag) {
+    try { new Intl.NumberFormat(tag); return tag; } catch (e) { return "en-US"; }
+  }
+  var loadedFonts = {};
+  function useFont(name) {
+    var root = document.documentElement.style;
+    if (typeof name !== "string" || !/^[A-Za-z0-9 ]{2,60}$/.test(name)) { root.removeProperty("--font-script"); return; }
+    if (!loadedFonts[name]) {
+      loadedFonts[name] = true;
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=" + encodeURIComponent(name).replace(/%20/g, "+") + ":wght@400;500;600&display=swap";
+      document.head.appendChild(link);
+    }
+    root.setProperty("--font-script", '"' + name + '"');
+  }
+  function activate(tr, lang) {
+    state.tr = tr;
+    state.lang = tr ? tr.lang : "en";
+    state.locale = safeLocale(tr ? (tr.locale || tr.lang) : "en-US");
+    state.dir = tr && tr.dir === "rtl" ? "rtl" : "ltr";
+    state.trSig = tr ? JSON.stringify(tr) : "";
+    try { plural = new Intl.PluralRules(state.locale); } catch (e) { plural = null; }
+    useFont(tr ? tr.font : null);
+    try {
+      window.localStorage.setItem("nutrition-log-lang", state.lang);
+      if (tr) window.localStorage.setItem("nutrition-log-i18n", state.trSig); else window.localStorage.removeItem("nutrition-log-i18n");
+    } catch (e) {}
+    buildFormats();
+    applyStatic();
+    if (!state.editing) resetForm();
+  }
+  // Re-apply when the wanted language or its translation document changed (Claude may have just written one).
+  function syncLang() {
+    var tr = findTranslation(wantedLang());
+    var sig = tr ? JSON.stringify(tr) : "";
+    if ((tr ? tr.lang : "en") !== state.lang || sig !== state.trSig) activate(tr);
+    else fillLangs();
+  }
+  function setLang(lang, persist) {
+    activate(findTranslation(lang));
+    renderAll();
+    if (persist) saveLang(state.lang);
+  }
+  function fillLangs() {
+    var sel = $("#sLang");
+    sel.textContent = "";
+    var en = el("option", "", "English"); en.value = "en"; sel.appendChild(en);
+    translations().forEach(function (d) { var o = el("option", "", String(d.name || d.lang)); o.value = d.lang; sel.appendChild(o); });
+    sel.value = state.lang;
+  }
+  // First paint before storage loads: the translation cached in this browser, if any.
+  (function () {
+    try {
+      var lang = window.localStorage.getItem("nutrition-log-lang");
+      var cached = JSON.parse(window.localStorage.getItem("nutrition-log-i18n") || "null");
+      if (lang && lang !== "en" && cached && cached.lang === lang && cached.strings) { state.tr = cached; state.lang = lang; state.locale = safeLocale(cached.locale || lang); state.dir = cached.dir === "rtl" ? "rtl" : "ltr"; state.trSig = JSON.stringify(cached); }
+    } catch (e) {}
+    try { plural = new Intl.PluralRules(state.locale); } catch (e) { plural = null; }
+    if (state.tr) useFont(state.tr.font);
+  })();
 
   // ---------- wiring ----------
   function wire() {
@@ -1796,8 +1944,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         clearTimeout(timer);
         syncActive();
       }
-      var lang = rawSettings().lang;
-      if (first && (lang === "en" || lang === "ru") && lang !== state.lang) setLang(lang, false);
+      if (state.loaded) syncLang();
       if (first && !profileComplete()) $("#settingsDetails").open = true;
       renderAll();
     }, function (err) {

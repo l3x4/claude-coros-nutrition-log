@@ -1,7 +1,5 @@
 # COROS nutrition log for Claude
 
-[Русская версия](README.ru.md)
-
 A food, weight and burn log that lives inside Claude. You send Claude a photo of your food, Claude estimates calories and macros and writes them to your log page. The page adds daily burn from your COROS watch, shows the balance, and over time learns how far your watch is off by comparing what you eat with your weight trend.
 
 <p>
@@ -14,7 +12,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 - Burn = base metabolism × 1.2 + COROS active calories × a correction factor, fitted from your weight trend
 - A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
 - Morning weight with a 7-day average, weekly balance, 14-day eaten vs burned chart
-- English and Russian: the page starts in the language you talk to Claude in, and you can switch it in Settings
+- Any language: the page ships in English, and Claude translates it into the language you talk to it in, right-to-left scripts included
 
 ## What you need
 
@@ -33,6 +31,10 @@ Claude reads [`SETUP.md`](SETUP.md), publishes the page for you and offers to sa
 The page is yours: your entries are stored in your own private folder of it, which nobody else can read.
 
 To get a newer version later, ask Claude to *update the nutrition log*: it republishes the page from this repository and your entries stay.
+
+## Languages
+
+The page ships in English. When you set it up in another language, or ask Claude to *translate my nutrition log into …*, Claude follows [`TRANSLATING.md`](TRANSLATING.md): it translates the page's text and saves the translation in your own storage. Switch languages in Settings. Arabic, Hebrew and other right-to-left languages get a mirrored layout and a matching font. A page update keeps your translation; anything new shows in English until Claude translates it.
 
 ## Use it
 
@@ -61,6 +63,7 @@ You can also add or fix entries by hand on the page.
 |---|---|
 | `index.html` | The page: one self-contained HTML file |
 | `SETUP.md` | Setup steps for Claude |
+| `TRANSLATING.md` | How Claude translates the page into another language |
 | `skill/coros-nutrition-log/SKILL.md` | The skill: logging rules and data format for Claude |
 
 ## Disclaimer

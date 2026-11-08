@@ -10,10 +10,11 @@ Clone the repository (GitHub is reachable from your workspace):
 git clone --depth 1 https://github.com/l3x4/claude-coros-nutrition-log
 ```
 
-You need two files, byte for byte as they are in the repository:
+You need these files, byte for byte as they are in the repository:
 
 - `index.html`: the page.
 - `skill/coros-nutrition-log/SKILL.md`: how to log food into the page.
+- `TRANSLATING.md`: how to translate the page, if the user doesn't speak English.
 
 Never retype, summarise or reformat them. If you can't get the raw files (for example, only a summarising web fetch is available), say so and stop rather than rebuilding the page from memory.
 
@@ -39,10 +40,10 @@ Later chats need the rules in `SKILL.md`.
 ## 4. Hand over
 
 1. Get the user's data folder: `data/users/<id>/`, where `<id>` is the user's id in the artifact's database (the database "who am I" call).
-2. Set the page language to the one the user talks to you in: write `lang` into the `settings` document (`ru` for Russian, otherwise `en`; the page has English and Russian). If `settings` already exists and has `lang`, leave it.
+2. Language: the page ships in English. If the user talks to you in another language, translate the page into it by following `TRANSLATING.md` (it saves a translation document and sets `lang` in `settings`). If `settings` already has `lang` and that translation exists, leave it.
 3. Ask the user to open the page, allow it to read COROS when it asks, and fill **Profile** in Settings: sex, age, height, start and goal weight, start and goal date. If they'd rather answer in chat, write the `settings` document yourself (format in `SKILL.md`).
 4. Tell them how to use it in one or two lines: send a photo of what they eat, say their morning weight, say the day type (rest, easy, key, no deficit, carb loading).
 
 ## Updating later
 
-When the user asks to update the nutrition log, clone the repository again, republish `index.html` to their existing artifact (their data stays), and propose the new `SKILL.md` as an update to their `coros-nutrition-log` skill.
+When the user asks to update the nutrition log, clone the repository again, republish `index.html` to their existing artifact (their data stays), and propose the new `SKILL.md` as an update to their `coros-nutrition-log` skill. If they use a translation and the page's `_version` is now higher than the translation's `version`, update the translation as `TRANSLATING.md` describes.

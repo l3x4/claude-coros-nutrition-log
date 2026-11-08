@@ -7,7 +7,7 @@ description: Sets up and keeps a personal nutrition log page in Claude that read
 
 The user keeps a food, weight and burn log on a page (an artifact) in Claude. You log what they eat from photos or descriptions; the page shows daily totals against targets, morning weight, burn from COROS and the balance.
 
-Reply in the user's language. Write `desc` and `note` in the user's language too. Store meal kinds, sources and day types as the English keys listed below: the page translates them.
+Reply in the user's language. Write `desc` and `note` in the user's language too. Store meal kinds, sources and day types as the English keys listed below: the page translates them. If the user asks for the page in another language, follow `TRANSLATING.md` from https://github.com/l3x4/claude-coros-nutrition-log.
 
 ## 1. Find the page
 
@@ -64,7 +64,7 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
   "targets": {"rest": {"kcal": 1900, "p": 170, "f": 65, "c": 160}}
 }
 ```
-All fields are optional. `lang` (`en` | `ru`) is the page language: at setup it is set to the language the user writes to you in, and the user can change it in Settings. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
+All fields are optional. `lang` is the page language, a BCP 47 tag: `en`, or a language with a translation document `i18n-<lang>` (see `TRANSLATING.md`); the user can switch it in Settings. `startDate` and `goalDate` (`YYYY-MM-DD`) set the plan; for a race, the goal date is best 2–3 weeks before it, so the taper and race week are at maintenance. `targets` holds only the day types the user fixed by hand; the others are suggested by the page from the profile. `burnK` (0.3–1.5) fixes the watch factor; without it the page fits the factor from the weight trend.
 
 ## 4. How the page computes things (for answering questions)
 
