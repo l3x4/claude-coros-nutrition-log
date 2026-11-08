@@ -1,8 +1,14 @@
 #!/usr/bin/env sh
-# Copies the page into the skill folder and packs the skill as a ZIP for upload to Claude.
+# Packs the skill for upload to Claude: skill/coros-nutrition-log/ plus the page (index.html),
+# with the skill folder as the ZIP root. Output: coros-nutrition-log.zip (not tracked in git).
 set -eu
 cd "$(dirname "$0")/.."
-cp index.html skill/coros-nutrition-log/index.html
-rm -f coros-nutrition-log.zip
-(cd skill && zip -qr ../coros-nutrition-log.zip coros-nutrition-log)
-echo "Built coros-nutrition-log.zip"
+name=coros-nutrition-log
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir "$tmp/$name"
+cp -R "skill/$name/." "$tmp/$name/"
+cp index.html "$tmp/$name/index.html"
+rm -f "$name.zip"
+(cd "$tmp" && zip -qr - "$name") > "$name.zip"
+echo "Built $name.zip"

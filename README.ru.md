@@ -23,7 +23,7 @@
 
 ## Как установить
 
-1. Скачай [`coros-nutrition-log.zip`](https://github.com/l3x4/claude-coros-nutrition-log/raw/main/coros-nutrition-log.zip).
+1. Скачай [`coros-nutrition-log.zip`](https://github.com/l3x4/claude-coros-nutrition-log/releases/latest/download/coros-nutrition-log.zip).
 2. В Claude открой **Customize → Skills**, нажми **+**, выбери **Create skill → Upload a skill** и загрузи ZIP.
 3. В новом чате напиши: *Настрой мой дневник питания.* Claude опубликует страницу.
 4. Открой страницу, разреши ей читать COROS, когда она спросит, и заполни **Профиль** в настройках: пол, возраст, рост, стартовый и целевой вес. Язык переключается кнопками EN / RU вверху.
@@ -67,10 +67,10 @@
 |---|---|
 | `index.html` | Сама страница, один HTML-файл |
 | `skill/coros-nutrition-log/SKILL.md` | Инструкция для Claude: установка, правила записи, формат данных |
-| `coros-nutrition-log.zip` | Навык, упакованный для загрузки |
-| `scripts/build-skill.sh` | Копирует `index.html` в навык и пересобирает ZIP |
+| `scripts/build-skill.sh` | Упаковывает `SKILL.md` и `index.html` в `coros-nutrition-log.zip` |
+| `.github/workflows/build-skill.yml` | Собирает ZIP при каждом изменении и прикладывает к последнему релизу |
 
-После правок `index.html` запусти `scripts/build-skill.sh` и закоммить новый ZIP.
+ZIP в репозитории не хранится: GitHub Actions собирает его из `index.html` и `skill/` при каждом пуше в `main`, поэтому скачанный архив всегда совпадает с кодом. Собрать локально: `scripts/build-skill.sh`.
 
 ## Оговорка
 
