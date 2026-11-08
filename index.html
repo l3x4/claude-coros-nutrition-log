@@ -351,13 +351,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
             <label class="field" for="sHeight"><span data-i18n="heightLbl"></span><input id="sHeight" inputmode="numeric"></label>
             <label class="field" for="sStart"><span data-i18n="startLbl"></span><input id="sStart" inputmode="decimal"></label>
             <label class="field" for="sGoal"><span data-i18n="goalLblW"></span><input id="sGoal" inputmode="decimal"></label>
-            <label class="field" for="sCut"><span data-i18n="cutLbl"></span><select id="sCut"></select></label>
             <label class="field" for="sStartDate"><span data-i18n="startDateLbl"></span><input id="sStartDate" type="date"></label>
             <label class="field" for="sGoalDate"><span data-i18n="goalDateLbl"></span><input id="sGoalDate" type="date"></label>
             <label class="field wide" for="sNote"><span data-i18n="noteLbl"></span><input id="sNote" maxlength="80" data-i18n-ph="notePh"></label>
           </div>
           <p class="hint" data-i18n="dateHint"></p>
-          <p class="hint" data-i18n="cutHint"></p>
         </div>
         <div class="set-block">
           <h3 data-i18n="burnH"></h3>
@@ -416,7 +414,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       kcalLbl: "Kcal", pLbl: "Protein, g", fLbl: "Fat, g", cLbl: "Carbs, g", autoPh: "auto",
       autoHint: "Without kcal they are computed from macros: 4 × protein + 9 × fat + 4 × carbs.",
       add: "Add", saveChanges: "Save changes", cancel: "Cancel", needKcal: "Enter kcal or at least the macros.",
-      dayHint: "Send food photos to Claude in chat: it estimates them and logs them here. A photo estimate is about ±25% per plate. The day ends when you go to sleep: food eaten before {h} counts to the previous day. Burn comes from COROS with a correction (see Settings).",
+      dayHint: "Send food photos to Claude in chat: it estimates them and logs them here. A photo estimate is about ±25% per plate. Days run from midnight to midnight, the same as COROS counts calories. Burn comes from COROS with a correction (see Settings).",
       weekH: "Last 7 days",
       tAvgK: "Eaten, average", tAvgKs: "target {t} · days: {n}", noLogs: "no logs",
       tBal: "Balance, week", tBalS: "≈ {kg} kg · days: {n}", tBalNone: "needs logs and COROS",
@@ -443,10 +441,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       paceDone: "Goal reached.", pacePast: "The goal date has passed: set a new one in Settings.",
       paceSetDate: "Set a goal date in Settings to see the pace you need.",
       planShort: "plan {p}", dateBad: "The goal date must be after the start date.", noteLbl: "Goal note (optional)", notePh: "e.g. Rinjani 100, May 2027",
-      cutLbl: "Day ends at", cutMidnight: "00:00 (midnight)",
-      cutHint: "Food logged after midnight and before this hour counts to the previous day, so a late snack before sleep stays with its day.",
       burnH: "Burn", kLbl: "Watch factor",
-      kBase: "Burn = base metabolism (Mifflin–St Jeor, from your weight) + COROS active calories × factor. ",
+      kBase: "Burn = base metabolism (Mifflin–St Jeor, from your weight) × 1.2 for digestion and everyday movement, which COROS doesn't count, + COROS active calories (workouts and brisk walking) × factor. ",
       kManual: "Now {k}, set by hand. Clear the field to fit it from your weight trend.",
       kWeight: "Now {k}: fitted from your weight trend and logs over {n} days; real burn ≈ {tdee} kcal a day. In the first 2 weeks of a deficit part of the loss is water, so the factor may come out high.",
       kDefault: "Now {k} by default: watches usually overestimate. Once 4 weeks hold {w0} weigh-ins and {d0} days with logs and COROS (now {w} and {d}), the factor is fitted from your weight trend.",
@@ -497,7 +493,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       kcalLbl: "Ккал", pLbl: "Белок, г", fLbl: "Жиры, г", cLbl: "Углев., г", autoPh: "авто",
       autoHint: "Если ккал не указаны, посчитаю из БЖУ: 4 × белок + 9 × жиры + 4 × углеводы.",
       add: "Добавить", saveChanges: "Сохранить изменения", cancel: "Отменить", needKcal: "Укажи калории или хотя бы БЖУ.",
-      dayHint: "Фото еды присылай в чат: Claude оценит и запишет сюда. Оценка по фото даёт ±25% на тарелку. День заканчивается со сном: еда до {h} идёт в предыдущий день. Расход берётся из COROS с поправкой (см. настройки).",
+      dayHint: "Фото еды присылай в чат: Claude оценит и запишет сюда. Оценка по фото даёт ±25% на тарелку. День длится от полуночи до полуночи, как COROS считает калории. Расход берётся из COROS с поправкой (см. настройки).",
       weekH: "Последние 7 дней",
       tAvgK: "Съедено в среднем", tAvgKs: "цель {t} · дней: {n}", noLogs: "нет записей",
       tBal: "Баланс за неделю", tBalS: "≈ {kg} кг · дней: {n}", tBalNone: "нужны записи и COROS",
@@ -524,10 +520,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       paceDone: "Цель достигнута.", pacePast: "Дата цели прошла: задай новую в настройках.",
       paceSetDate: "Укажи дату цели в настройках, чтобы видеть нужный темп.",
       planShort: "план {p}", dateBad: "Дата цели должна быть позже даты старта.", noteLbl: "Подпись к цели (необязательно)", notePh: "например, Rinjani 100, май 2027",
-      cutLbl: "День заканчивается в", cutMidnight: "00:00 (полночь)",
-      cutHint: "Еда после полуночи и до этого часа идёт в предыдущий день, чтобы перекус перед сном оставался в своём дне.",
       burnH: "Расход", kLbl: "Коэфф. к часам",
-      kBase: "Расход = базовый обмен (формула Миффлина — Сан Жеора, от веса) + активные калории COROS × коэффициент. ",
+      kBase: "Расход = базовый обмен (формула Миффлина — Сан Жеора, от веса) × 1,2 на пищеварение и обычные движения, которые COROS не считает, + активные калории COROS (тренировки и быстрая ходьба) × коэффициент. ",
       kManual: "Сейчас {k}, задан вручную. Очисти поле, чтобы коэффициент подбирался по весу.",
       kWeight: "Сейчас {k}: подобран по тренду веса и записям за {n} дн., реальный расход ≈ {tdee} ккал в день. В первые 2 недели дефицита часть потери — вода, коэффициент может выйти завышенным.",
       kDefault: "Сейчас {k} по умолчанию: часы обычно завышают. Когда за 4 недели наберётся {w0} взвешиваний и {d0} дней с записями и COROS (сейчас {w} и {d}), коэффициент подстроится по тренду веса.",
@@ -628,9 +622,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   var TYPES = ["rest", "regular", "key", "maint", "carb"];
   var DAY = 864e5;
   var PROFILE_DEFAULTS = { sex: "male", age: 35, height: 175, weight: 75 };
-  var DEFAULT_CUTOFF = 5;
-  // Burn = Mifflin–St Jeor base + COROS active calories × k. k starts at 0.85 (wrist estimates
-  // run high) and is refit from the weight trend once there are enough weigh-ins and logged days.
+  // Burn = Mifflin–St Jeor × 1.2 + COROS active calories × k. COROS counts only workouts and brisk
+  // walking (cadence over 130), so the 1.2 covers digestion and everyday movement. k starts at 0.85
+  // (wrist estimates run high in workouts) and is refit from the weight trend once there is enough data.
+  var BASE_FACTOR = 1.2;
   var DEFAULT_K = 0.85;
   var KCAL_PER_KG = 7700;
   var CAL_WINDOW = 28, CAL_MIN_DAYS = 14, CAL_MIN_WEIGHTS = 10;
@@ -669,10 +664,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
   function parseIso(s) { var a = String(s).split("-").map(Number); return new Date(a[0], a[1] - 1, a[2]); }
   function addDays(s, n) { var d = parseIso(s); d.setDate(d.getDate() + n); return iso(d); }
-  function cutoff() { var c = (state.docs.get("settings") || {}).dayCutoff; return typeof c === "number" && c >= 0 && c <= 8 ? c : DEFAULT_CUTOFF; }
-  // The day ends when you go to sleep: before the cutoff hour still counts as the previous day.
-  function today() { var d = new Date(); if (d.getHours() < cutoff()) d.setDate(d.getDate() - 1); return iso(d); }
-  function sortKey(tm) { tm = String(tm || ""); if (!/^\d{2}:\d{2}/.test(tm)) return "99:99"; var h = Number(tm.slice(0, 2)); return h < cutoff() ? String(h + 24) + tm.slice(2) : tm; }
+  // Days run from midnight to midnight in local time, the same as COROS counts calories.
+  function today() { return iso(new Date()); }
+  function sortKey(tm) { tm = String(tm || ""); return /^\d{2}:\d{2}/.test(tm) ? tm : "99:99"; }
   function num(v) {
     if (v === null || v === undefined) return NaN;
     var s = String(v).replace(",", ".").trim();
@@ -747,6 +741,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var s = rawSettings();
     return finite(s.startWeight) ? s.startWeight : PROFILE_DEFAULTS.weight;
   }
+  function baseOn(date) { return bmrOn(date) * BASE_FACTOR; }
   function bmrOn(date) {
     var p = profile();
     return 10 * weightNear(date) + 6.25 * p.height - 5 * p.age + (p.sex === "female" ? -161 : 5);
@@ -868,7 +863,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var days = [];
     for (var i = 0; i < CAL_WINDOW; i++) {
       var d = addDays(start, i), meals = mealsOn(d), a = activeOn(d);
-      if (meals.length && a !== null) days.push({ eat: totals(meals).kcal, a: a, b: bmrOn(d) });
+      if (meals.length && a !== null) days.push({ eat: totals(meals).kcal, a: a, b: baseOn(d) });
     }
     var span = ws.length ? (parseIso(ws[ws.length - 1].date) - parseIso(ws[0].date)) / DAY : 0;
     var need = { days: days.length, weights: ws.length };
@@ -885,7 +880,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function burnOn(date, cal) {
     var a = activeOn(date);
     if (a === null) return null;
-    var b = bmrOn(date);
+    var b = baseOn(date);
     return { total: b + cal.k * a, bmr: b, active: a };
   }
 
@@ -950,14 +945,6 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     document.querySelectorAll("[data-i18n-ph]").forEach(function (n) { n.setAttribute("placeholder", t(n.getAttribute("data-i18n-ph"))); });
     document.querySelectorAll("[data-i18n-aria]").forEach(function (n) { n.setAttribute("aria-label", t(n.getAttribute("data-i18n-aria"))); });
     $("#sLang").value = state.lang;
-    var cut = $("#sCut"), cur = cut.value;
-    cut.textContent = "";
-    for (var h = 0; h <= 8; h++) {
-      var o = el("option", "", h === 0 ? t("cutMidnight") : String(h).padStart(2, "0") + ":00");
-      o.value = String(h);
-      cut.appendChild(o);
-    }
-    cut.value = cur || String(cutoff());
     fillTitles();
   }
 
@@ -1149,8 +1136,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       wi.value = dd && finite(dd.weight) ? fmt1(dd.weight) : "";
     }
     renderMeals(meals);
-    var c = cutoff();
-    $("#dayHint").textContent = t("dayHint", { h: c === 0 ? "00:00" : String(c).padStart(2, "0") + ":00" });
+    $("#dayHint").textContent = t("dayHint");
     if (!state.editing) {
       $("#mSave").textContent = t("add");
       $("#mealSummary").textContent = t("addManual");
@@ -1484,7 +1470,6 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#sNote").value = s.goalNote;
     $("#sStartDate").value = s.startDate || "";
     $("#sGoalDate").value = s.goalDate || "";
-    $("#sCut").value = String(cutoff());
     $("#sK").value = s.burnK !== null ? F.n2.format(s.burnK) : "";
   }
   function renderKInfo() {
@@ -1624,7 +1609,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (note) data.goalNote = note; else delete data.goalNote;
       if (startDate) data.startDate = startDate; else delete data.startDate;
       if (goalDate) data.goalDate = goalDate; else delete data.goalDate;
-      data.dayCutoff = Number($("#sCut").value);
+      delete data.dayCutoff;
       if (kRaw === "") delete data.burnK; else data.burnK = Math.round(k * 100) / 100;
       if (resetTargets) {
         delete data.targets;

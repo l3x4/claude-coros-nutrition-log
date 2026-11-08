@@ -11,7 +11,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 
 - Food log from photos, labels or a few words, with protein, fat and carbs
 - Targets per day type: rest, easy, key, no deficit, carb loading, suggested from your profile or set by hand
-- Burn = base metabolism + COROS active calories × a correction factor, fitted from your weight trend
+- Burn = base metabolism × 1.2 + COROS active calories × a correction factor, fitted from your weight trend
 - A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
 - Morning weight with a 7-day average, weekly balance, 14-day eaten vs burned chart
 - English and Russian: the page starts in the language you talk to Claude in, and you can switch it in Settings
@@ -44,14 +44,14 @@ Talk to Claude in any chat:
 - *Today is a key day*, *I'm carb loading tomorrow and the day after.*
 - *How am I doing today?*
 
-The day ends when you go to sleep, so a snack after midnight stays with the evening it belongs to. When there's no label or weight in the photo, Claude looks the product up online instead of guessing.
+Days run from midnight to midnight, the same as COROS counts calories. When there's no label or weight in the photo, Claude looks the product up online instead of guessing.
 
 You can also add or fix entries by hand on the page.
 
 ## How burn is calculated
 
-- **Base metabolism**: Mifflin–St Jeor from your profile and 7-day average weight.
-- **Active calories** come from COROS (the daily summary, nothing else is read) and are multiplied by a factor. It starts at 0.85, because wrist estimates usually run high.
+- **Base**: Mifflin–St Jeor from your profile and 7-day average weight, × 1.2 for digestion and everyday movement. COROS doesn't count those: its active calories cover only workouts and brisk walking.
+- **Active calories** come from COROS (the daily summary, nothing else is read) and are multiplied by a factor. It starts at 0.85, because wrist estimates of workouts usually run high.
 - After 4 weeks with at least 10 weigh-ins and 14 logged days, the factor is fitted so that what you eat, minus the change in your weight (7,700 kcal per kg), matches your burn. That also absorbs systematic errors in the food estimates. You can fix the factor by hand in Settings.
 - **Balance** = eaten − burned. Minus is a deficit.
 

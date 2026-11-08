@@ -18,7 +18,7 @@ Reply in the user's language. Write `desc` and `note` in the user's language too
 ## 2. Logging rules
 
 - **What is in the photo is what was eaten**, not leftovers, unless the user says otherwise. Shared dishes: count only the user's share as they describe it.
-- **A day ends when the user goes to sleep**, not at midnight. Food eaten after midnight but before they slept belongs to the previous date. When it matters and COROS is connected, check the sleep window (sleep is dated by the wake-up day); otherwise use `dayCutoff` from settings (default 5, meaning 05:00).
+- **Days run from midnight to midnight** in the user's local time, the same as COROS counts calories. Food eaten after midnight goes to the new date, even before sleep.
 - **When no label or weight is visible, search the web** for the product's package size and nutrition before estimating. For dishes, estimate the portion from what is visible and say what you assumed in `note`.
 - **Write each meal right away**, one write per message, as soon as the user sends it. Do not batch a day's meals.
 - After writing, reply briefly: the breakdown (item → kcal), the entry's kcal and protein, and the day so far against the target. Read the day's documents to total them; other chats may have written entries too.
@@ -44,7 +44,7 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
 }
 ```
 
-- `date`: the log day (see the sleep rule), `YYYY-MM-DD`. `time`: local `HH:MM` when eaten.
+- `date`: the local calendar date when it was eaten, `YYYY-MM-DD`. `time`: local `HH:MM`.
 - `title`: `breakfast` | `lunch` | `dinner` | `snack` | `workout` (fuel during training).
 - `src`: `photo` | `label` (nutrition label seen) | `said` (described, no photo) | `manual`.
 - `kcal`, `p`, `f`, `c`: whole numbers (kcal, grams of protein, fat, carbs). Keep `kcal` close to 4p + 9f + 4c unless alcohol or fibre explains the gap.
@@ -61,7 +61,6 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
   "lang": "en", "sex": "male", "age": 42, "height": 180,
   "startWeight": 84, "goalWeight": 78, "startDate": "2026-11-16", "goalDate": "2027-04-18",
   "goalNote": "Trail 60K, May 7",
-  "dayCutoff": 5,
   "targets": {"rest": {"kcal": 1900, "p": 170, "f": 65, "c": 160}}
 }
 ```
@@ -70,7 +69,7 @@ All fields are optional. `lang` (`en` | `ru`) is the page language: at setup it 
 ## 4. How the page computes things (for answering questions)
 
 - Base metabolism: Mifflin–St Jeor from the 7-day average weight (or last weigh-in, or start weight): 10 × kg + 6.25 × cm − 5 × age + 5 (male) or − 161 (female).
-- Burn for a day = base + COROS active kcal × factor. The factor starts at 0.85 (watches tend to overestimate). Once the last 4 weeks hold at least 10 weigh-ins and 14 days with both meals and COROS data, the factor is refit so that average intake minus the weight trend (7,700 kcal per kg) equals average burn.
+- Burn for a day = base metabolism × 1.2 + COROS active kcal × factor. COROS active calories cover only workouts and brisk walking (cadence over 130), so the 1.2 stands for digestion and everyday movement. The factor starts at 0.85 (watches tend to overestimate workouts). Once the last 4 weeks hold at least 10 weigh-ins and 14 days with both meals and COROS data, the factor is refit so that average intake minus the weight trend (7,700 kcal per kg) equals average burn.
 - Balance = eaten − burn; negative is a deficit.
 - Needed pace: (current weight − goal weight) ÷ days to the goal date, shown per week and as kcal a day (× 7,700 per kg). Current weight is the 7-day average. Above 0.75% of body weight a week the page warns that the pace is aggressive.
 - Planned path: a straight line from the start weight on the start date (or the first weigh-in) to the goal weight on the goal date.
