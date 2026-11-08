@@ -741,6 +741,15 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function parseIso(s) { var a = String(s).split("-").map(Number); return new Date(a[0], a[1] - 1, a[2]); }
+  // Years in the page's calendar: Thai counts the Buddhist era (+543). Birth years are shown that way, stored Gregorian.
+  function yearShift() {
+    try {
+      var d = new Date(2000, 6, 1);
+      var part = new Intl.DateTimeFormat(state.locale, { year: "numeric" }).formatToParts(d).filter(function (x) { return x.type === "year"; })[0];
+      var off = part ? Number(latinDigits(part.value)) - 2000 : 0;
+      return isFinite(off) && off > 0 ? off : 0;
+    } catch (e) { return 0; }
+  }
   function paintDate(input) {
     var out = input.parentNode.querySelector(".date-text span"), v = input.value;
     var ok = /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -1639,9 +1648,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     fillTargetInputs(s.targets);
     $("#sSex").value = p.sex;
     var yr = new Date().getFullYear();
-    $("#sBirth").value = finite(raw.birthYear) ? String(raw.birthYear) : finite(raw.age) ? String(yr - raw.age) : "";
+    var ys = yearShift();
+    $("#sBirth").value = finite(raw.birthYear) ? String(raw.birthYear + ys) : finite(raw.age) ? String(yr - raw.age + ys) : "";
     $("#sHeight").value = finite(raw.height) ? String(raw.height) : "";
-    $("#sBirth").placeholder = String(yr - PROFILE_DEFAULTS.age);
+    $("#sBirth").placeholder = String(yr - PROFILE_DEFAULTS.age + ys);
     $("#sHeight").placeholder = String(PROFILE_DEFAULTS.height);
     $("#sStart").value = s.startWeight !== null ? fmt1(s.startWeight) : "";
     $("#sGoal").value = s.goalWeight !== null ? fmt1(s.goalWeight) : "";
@@ -1759,7 +1769,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     if (e) e.preventDefault();
     if (!requireDb()) return;
     var birth = num($("#sBirth").value), height = num($("#sHeight").value), yr = new Date().getFullYear();
-    if (birth > yr && birth - 543 <= yr) birth -= 543; // a Buddhist-era year, as Thai users often write it
+    // A year past this one is in the page's calendar (Buddhist era in Thai, or typed that way anywhere).
+    if (birth > yr) birth -= yearShift() || 543;
     var sw = num($("#sStart").value), gw = num($("#sGoal").value);
     var okW = function (v) { return isNaN(v) || (v >= 30 && v <= 250); };
     if ((!isNaN(birth) && (birth % 1 !== 0 || yr - birth < 14 || yr - birth > 100)) || (!isNaN(height) && (height < 120 || height > 230)) || !okW(sw) || !okW(gw)) {
