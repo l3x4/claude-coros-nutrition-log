@@ -31,8 +31,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete skill-latest --cleanup-tag --yes || true
-          gh release create skill-latest coros-nutrition-log.zip \
+          gh release create skill-latest claude-coros-nutrition-log.zip \
             --target "$GITHUB_SHA" \
             --title "Skill: latest build" \
-            --notes "Built from ${GITHUB_SHA::7}. Upload coros-nutrition-log.zip in Claude: Customize → Skills → + → Create skill → Upload a skill." \
+            --notes "Built from ${GITHUB_SHA::7}. Upload claude-coros-nutrition-log.zip in Claude: Customize → Skills → + → Create skill → Upload a skill." \
             --latest

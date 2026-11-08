@@ -23,8 +23,8 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 
 ## Set it up
 
-1. Download [`coros-nutrition-log.zip`](https://github.com/l3x4/claude-coros-nutrition-log/releases/latest/download/coros-nutrition-log.zip).
-2. In Claude open **Customize → Skills**, press **+**, choose **Create skill → Upload a skill** and pick the ZIP.
+1. Download [`claude-coros-nutrition-log.zip`](https://github.com/l3x4/claude-coros-nutrition-log/releases/latest/download/claude-coros-nutrition-log.zip).
+2. In Claude open **Customize → Skills**, press **+**, choose **Create skill → Upload a skill** and pick the ZIP. The skill shows up as **coros-nutrition-log**: Claude doesn't allow the word "claude" in skill names.
 3. In a new chat write: *Set up my nutrition log.* Claude publishes the page for you.
 4. Open the page, allow it to read COROS when asked, and fill **Profile** in Settings: sex, age, height, start and goal weight.
 
@@ -67,7 +67,7 @@ The skill is still the easier way: it also carries the logging rules and the dat
 |---|---|
 | `index.html` | The page: one self-contained HTML file |
 | `skill/coros-nutrition-log/SKILL.md` | Instructions for Claude: setup, logging rules, data format |
-| `scripts/build-skill.sh` | Packs `SKILL.md` and `index.html` into `coros-nutrition-log.zip` |
+| `scripts/build-skill.sh` | Packs `SKILL.md` and `index.html` into `claude-coros-nutrition-log.zip` |
 | `.github/workflows/build-skill.yml` | Builds the ZIP on every change and attaches it to the latest release |
 
 The ZIP isn't kept in the repository: GitHub Actions builds it from `index.html` and `skill/` on every push to `main`, so the download always matches the code. To build it locally, run `scripts/build-skill.sh`.
