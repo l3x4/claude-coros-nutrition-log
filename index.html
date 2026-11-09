@@ -174,6 +174,7 @@ table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { padding: 7px 4px; text-align: start; border-bottom: 1px solid var(--line); white-space: nowrap; }
 th { font-weight: 500; color: var(--muted); font-size: 12px; }
 td.r, th.r { text-align: end; }
+.day-t { display: block; font-size: 11px; color: var(--muted); }
 #weekBody tr { cursor: pointer; }
 tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline-end: 6px; vertical-align: 1px; }
@@ -318,7 +319,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     </div>
     <div class="scroll">
       <table>
-        <thead><tr><th data-i18n="thDay"></th><th data-i18n="thType"></th><th class="r" data-i18n="thKcal"></th><th class="r" data-i18n="thBal"></th><th class="r" data-i18n="thP"></th><th class="r" data-i18n="thW"></th></tr></thead>
+        <thead><tr><th data-i18n="thDay"></th><th class="r" data-i18n="thKcal"></th><th class="r" data-i18n="thBurn"></th><th class="r" data-i18n="thBal"></th><th class="r" data-i18n="thP"></th><th class="r" data-i18n="thW"></th></tr></thead>
         <tbody id="weekBody"></tbody>
       </table>
     </div>
@@ -1487,8 +1488,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         var tr = el("tr");
         if (date === state.selected) tr.className = "sel";
         tr.tabIndex = 0;
-        tr.appendChild(el("td", "", F.row.format(parseIso(date))));
-        tr.appendChild(el("td", "", type ? typeShort(type) : "—"));
+        // The day type sits under the date, so the row fits a phone with intake, burn and balance side by side.
+        var dc = el("td", "day-c", F.row.format(parseIso(date)));
+        dc.appendChild(el("span", "day-t", type ? typeShort(type) : "—"));
+        tr.appendChild(dc);
         var kc = el("td", "r num");
         if (meals.length) {
           var ratio = tt.kcal / tgt.kcal;
@@ -1500,7 +1503,15 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
           kc.textContent = "—";
         }
         tr.appendChild(kc);
-        var bc = el("td", "r num"), b = burnOn(date, cal);
+        // Burn next to intake, so the balance reads as eaten − burn. Today's burn is still counting.
+        var bc = el("td", "r num"), b = burnOn(date, cal), bu = el("td", "r num");
+        if (b && date <= now) {
+          bu.textContent = F.plain.format(Math.round(b.total));
+          if (date === now) bu.classList.add("partial");
+        } else {
+          bu.textContent = "—";
+        }
+        tr.appendChild(bu);
         if (meals.length && b && date <= now) {
           var bal = tt.kcal - b.total;
           bc.textContent = signedPlain(bal);
