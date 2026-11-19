@@ -427,7 +427,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 4,
+  "_version": 5,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -448,6 +448,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "typeManual": "You chose this type. Tap it again to let COROS set it.",
   "typeNone": "No COROS data for this day yet, so the {easy} target applies. Tap a type to choose it yourself.",
   "typeAutoTag": "auto",
+  "typePlan": "Set from your COROS training plan: {w}. Tap a type to choose it yourself.",
+  "typePlanRest": "Set from your COROS training plan: no workout that day. Tap a type to choose it yourself.",
   "kcal": "kcal",
   "left": "{n} kcal left",
   "over": "{n} kcal over target",
@@ -656,7 +658,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   var state = {
     lang: "en", locale: "en-US", dir: "ltr", tr: null, trSig: "",
     col: null, docs: new Map(), selected: null, editing: null, loaded: false, settingsDirty: false,
-    mcp: null, coros: new Map(), corosAt: null, corosErr: null, corosAsk: false, syncing: new Map()
+    mcp: null, coros: new Map(), corosAt: null, corosErr: null, corosAsk: false, syncing: new Map(),
+    plan: null, planErr: null
   };
   var plural = null;
 
@@ -712,6 +715,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var names = { rest: typeLabel("rest"), key: typeLabel("key"), easy: typeLabel("regular"), a: fmt(AUTO_REST_BELOW), b: fmt(AUTO_KEY_FROM) };
     if (!info.type) return t("typeNone", names);
     if (!info.auto) return typeHint(info.type) + " " + t("typeManual");
+    if (info.src === "plan") {
+      var ws = state.plan.days.get(date) || [];
+      return typeHint(info.type) + " " + (ws.length ? t("typePlan", { w: ws.map(function (w) { return w.name; }).join(", ") }) : t("typePlanRest"));
+    }
     names.n = fmt(activeOn(date));
     return typeHint(info.type) + " " + t(date === today() ? "typeAutoToday" : "typeAuto", names);
   }
@@ -752,6 +759,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   var CAL_WINDOW = 28, CAL_MIN_DAYS = 14, CAL_MIN_WEIGHTS = 10;
   var COROS = "COROS", COROS_TOOL = "queryDailyHealthData", COROS_INPUT = { days: 14 };
   var COROS_CACHE = { staleTime: 10 * 60 * 1000, gcTime: 7 * DAY };
+  // The COROS training schedule, from today for two weeks, gives the type of planned days ahead of the activity.
+  var PLAN_TOOL = "queryTrainingSchedule", PLAN_DAYS = 14;
+  // Expected COROS active kcal of a planned day: everyday movement plus about 0.2 kcal per kg per minute of training
+  // (what COROS counts for a run), so planned days fall under the same rest / key limits as recorded ones.
+  var PLAN_EVERYDAY = 300, PLAN_KCAL_KG_MIN = 0.2, PLAN_MIN_PER_KM = 6.5;
 
   // ---------- helpers ----------
   function $(s) { return document.querySelector(s); }
@@ -976,12 +988,37 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     if (a === null) return null;
     return a >= AUTO_KEY_FROM ? "key" : a < AUTO_REST_BELOW ? "rest" : "regular";
   }
-  // The type a day counts as: the one set by hand, else the one from COROS, else none (the easy target applies).
+  var TYPE_RANK = { rest: 0, regular: 1, key: 2 };
+  function typeFor(active) { return active >= AUTO_KEY_FROM ? "key" : active < AUTO_REST_BELOW ? "rest" : "regular"; }
+  // From the COROS training schedule: the planned workouts' expected active kcal. Null outside the fetched range.
+  function planType(date) {
+    var pl = state.plan;
+    if (!pl || date < pl.from || date > pl.to) return null;
+    var day = pl.days.get(date);
+    if (!day || !day.length) return "rest";
+    var min = 0, unknown = false;
+    day.forEach(function (w) {
+      if (finite(w.min)) min += w.min; else if (finite(w.km)) min += w.km * PLAN_MIN_PER_KM; else unknown = true;
+    });
+    var tp = typeFor(PLAN_EVERYDAY + PLAN_KCAL_KG_MIN * weightNear(date) * min);
+    return unknown && tp === "rest" ? "regular" : tp;
+  }
+  // The type a day counts as: the one set by hand; else what COROS recorded (finished days), the plan (days ahead),
+  // or the higher of the two (today, so a planned workout counts from the morning and doing more moves it up).
   function typeInfo(date) {
     var m = dayType(date);
-    if (m) return { type: m, auto: false };
-    var a = autoType(date);
-    return { type: a, auto: a !== null };
+    if (m) return { type: m, auto: false, src: "manual" };
+    var a = autoType(date), p = planType(date), now = today();
+    if (date < now) {
+      if (a) return { type: a, auto: true, src: "coros" };
+      if (p) return { type: p, auto: true, src: "plan" };
+    } else if (date === now) {
+      if (p && (!a || TYPE_RANK[p] > TYPE_RANK[a])) return { type: p, auto: true, src: "plan" };
+      if (a) return { type: a, auto: true, src: "coros" };
+    } else if (p) {
+      return { type: p, auto: true, src: "plan" };
+    }
+    return { type: null, auto: false, src: null };
   }
   function mealsOn(date) {
     var out = [];
@@ -2063,7 +2100,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     state.coros = mp;
     state.corosAt = result && result.cache && finite(result.cache.storedAt) ? result.cache.storedAt : Date.now();
     state.corosErr = null;
-    state.corosAsk = false;
+    state.corosAsk = state.planErr === "approval_required" || state.planErr === "consent_required";
     syncActive();
     renderAll();
   }
@@ -2090,6 +2127,58 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       }).catch(function () { state.syncing.delete(date); });
     });
   }
+  // queryTrainingSchedule answers in text: a "YYYY-MM-DD" line per day, then one block per workout:
+  // its name, where it comes from, and "Distance: 10.80 km" / "Estimated Time: 58:31" when COROS can tell.
+  function planInput() {
+    var a = today(), b = addDays(a, PLAN_DAYS - 1);
+    return { startDate: a.replace(/-/g, ""), endDate: b.replace(/-/g, "") };
+  }
+  function parsePlan(text) {
+    var days = new Map(), re = /(?:^|\n)(\d{4}-\d{2}-\d{2})[ \t]*\n([\s\S]*?)(?=\n\d{4}-\d{2}-\d{2}[ \t]*\n|$)/g, m;
+    while ((m = re.exec(text))) {
+      var list = [];
+      m[2].split(/\n\s*\n/).forEach(function (block) {
+        var lines = block.split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
+        if (!lines.length || !/idInPlan|Plan ID|Distance:|Estimated Time:/i.test(block)) return;
+        var name = lines[0];
+        if (/^rest( day)?$/i.test(name) || /Sport:\s*Rest\b/i.test(block)) return;
+        var km = /Distance:\s*([\d.,]+)\s*km/i.exec(block), tm = /Estimated Time:\s*(?:(\d+):)?(\d{1,2}):(\d{2})/i.exec(block);
+        list.push({
+          name: name.slice(0, 80),
+          km: km ? Number(km[1].replace(",", ".")) : null,
+          min: tm ? Number(tm[1] || 0) * 60 + Number(tm[2]) + Number(tm[3]) / 60 : null
+        });
+      });
+      if (list.length) days.set(m[1], list);
+    }
+    return days;
+  }
+  function onPlanData(result, input) {
+    var days = parsePlan(corosText(result));
+    // A schedule with nothing on it says nothing about rest days: without any workout, the plan is ignored.
+    state.plan = days.size ? { days: days, from: isoOf(input.startDate), to: isoOf(input.endDate) } : null;
+    state.planErr = null;
+    state.corosAsk = !!state.corosErr && (state.corosErr.code === "approval_required" || state.corosErr.code === "consent_required");
+    renderAll();
+  }
+  function onPlanError(err) {
+    var code = err && err.code;
+    state.planErr = code || "fail";
+    if (["needs_reauth", "server_not_connected", "selection_required", "blocked_by_policy", "approval_required", "not_in_manifest", "consent_required"].indexOf(code) >= 0) state.plan = null;
+    if (code === "approval_required" || code === "consent_required") state.corosAsk = true;
+    renderAll();
+  }
+  function isoOf(ymd) { return ymd.slice(0, 4) + "-" + ymd.slice(4, 6) + "-" + ymd.slice(6, 8); }
+  function watchPlan(mcp) {
+    var input = planInput();
+    try {
+      mcp.watchTool(COROS, PLAN_TOOL, input, function (ev) {
+        if (ev.type === "data") onPlanData(ev.result, input); else onPlanError(ev.error);
+      }, { cache: COROS_CACHE, refetchInterval: 30 * 60 * 1000 });
+    } catch (e) {
+      onPlanError({ code: "bad_request" });
+    }
+  }
   async function connectCoros() {
     if (!window.claude || typeof window.claude.use !== "function") return;
     var mcp = null;
@@ -2103,14 +2192,17 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     } catch (e) {
       onCorosError({ code: "bad_request" });
     }
+    watchPlan(mcp);
   }
   function askCoros() {
     if (!state.mcp) return;
     var btn = $("#corosBtn");
     btn.disabled = true;
-    state.mcp.callTool(COROS, COROS_TOOL, COROS_INPUT, { cache: COROS_CACHE })
-      .then(onCorosData, onCorosError)
-      .then(function () { btn.disabled = false; });
+    var input = planInput();
+    Promise.all([
+      state.mcp.callTool(COROS, COROS_TOOL, COROS_INPUT, { cache: COROS_CACHE }).then(onCorosData, onCorosError),
+      state.mcp.callTool(COROS, PLAN_TOOL, input, { cache: COROS_CACHE }).then(function (r) { onPlanData(r, input); }, onPlanError)
+    ]).then(function () { btn.disabled = false; });
   }
 
   // ---------- language ----------

@@ -20,12 +20,12 @@ Never retype, summarise or reformat them. If you can't get the raw files (for ex
 
 ## 2. Publish the page
 
-1. Look among the user's artifacts for one titled **Nutrition log**. If there is one, ask whether to update it to the current `index.html` (republish the file to the same artifact) or leave it. Their entries are kept either way.
+1. Look among the user's artifacts for one titled **Nutrition log**. If there is one, ask whether to update it to the current `index.html` or leave it. Their entries are kept either way. To update, declare the capabilities below first, then republish the file to the same artifact.
 2. Otherwise publish `index.html` as a new artifact titled **Nutrition log**, from the cloned file.
 3. Then declare its capabilities (a new page is published first, then declared), exactly:
 
    ```json
-   {"db": {}, "user": {}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData"]}]}}
+   {"db": {}, "user": {}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData", "queryTrainingSchedule"]}]}}
    ```
 
    If the user hasn't connected COROS to Claude, declare the same anyway and suggest connecting it: the page works without it and picks up burn once COROS is connected.

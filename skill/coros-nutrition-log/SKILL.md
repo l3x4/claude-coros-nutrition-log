@@ -52,7 +52,7 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
 
 **Day**, id `day-YYYY-MM-DD`: `{"kind": "day", "date": "2026-11-08", "type": "maint", "weight": 94.6}`
 - `type`: `rest` (no training) | `regular` (easy run up to 1.5 h) | `key` (intervals, long run, big climbing, race-like) | `maint` (maintenance, eat about what you burn: taper, race, recovery, travel) | `carb` (carb loading 1–2 days before a race).
-- Without `type`, the page picks one from the day's COROS active kcal: `rest` below 450, `key` from 1,100, `regular` in between (today: from the activity so far, so it can move up during the day). Future days and days without COROS data use the `regular` target. Set `type` only when the user asks for a type, or for `maint` and `carb`, which COROS can't tell. To hand a day back to COROS, delete the field (`{"type": {"__delete__": true}}` in an update).
+- Without `type`, the page picks one from the day's COROS active kcal: `rest` below 450, `key` from 1,100, `regular` in between. Days ahead take it from the COROS training schedule (two weeks from today): expected active kcal = 300 + 0.2 × weight × planned minutes (6.5 min per km when only the distance is known), under the same limits; no workout means `rest`, and a workout COROS gives no time or distance for means at least `regular`. Today takes the higher of the plan and the activity so far. Days without either use the `regular` target; a schedule with no workouts at all is ignored. Set `type` only when the user asks for a type, or for `maint` and `carb`, which COROS can't tell. To hand a day back to COROS, delete the field (`{"type": {"__delete__": true}}` in an update).
 - `weight`: morning weight in kg, one decimal.
 - `active` and `activeAt` are written by the page from COROS (active kcal). Leave them alone.
 
@@ -80,4 +80,4 @@ All fields are optional. `birthYear` is the year of birth; older settings may ho
 
 ## 5. Privacy
 
-Each person's data sits in their own `data/users/<id>/` folder, which nobody else can read, the page owner included. Do not read or write other folders. The page reads only the daily COROS summary, and only after the user allows it.
+Each person's data sits in their own `data/users/<id>/` folder, which nobody else can read, the page owner included. Do not read or write other folders. The page reads only the daily COROS summary and the training schedule for the next two weeks, and only after the user allows it.
