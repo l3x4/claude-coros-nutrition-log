@@ -93,6 +93,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .chip .num { color: var(--muted); }
 .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .chip[aria-pressed="true"] .num { color: inherit; opacity: 0.85; }
+/* Type picked from COROS: a suggestion, so outlined rather than filled. */
+.chip.auto[aria-pressed="true"] { background: var(--panel); color: var(--ink); border: 1px dashed var(--accent); }
+.chip.auto[aria-pressed="true"] .num { color: var(--muted); opacity: 1; }
+.auto-tag { font-size: 11px; color: var(--accent); }
+.day-t.auto { font-style: normal; opacity: 0.75; }
 
 .kcal { display: grid; gap: 2px; }
 .kcal-big { font: 600 34px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
@@ -422,7 +427,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 3,
+  "_version": 4,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -438,7 +443,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "nextDay": "Next day",
   "backToday": "Back to today",
   "dayType": "Day type",
-  "typePick": "Pick the day type. Until then the Easy day target is used.",
+  "typeAuto": "Set from COROS: {n} active kcal ({rest} under {a}, {key} from {b}). Tap a type to choose it yourself.",
+  "typeAutoToday": "Set from COROS so far today: {n} active kcal ({rest} under {a}, {key} from {b}). It moves up as you train. Tap a type to choose it yourself.",
+  "typeManual": "You chose this type. Tap it again to let COROS set it.",
+  "typeNone": "No COROS data for this day yet, so the {easy} target applies. Tap a type to choose it yourself.",
+  "typeAutoTag": "auto",
   "kcal": "kcal",
   "left": "{n} kcal left",
   "over": "{n} kcal over target",
@@ -698,6 +707,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function typeLabel(k) { return t("type." + k); }
   function typeShort(k) { return t("type." + k + ".short"); }
   function typeHint(k) { return t("type." + k + ".hint"); }
+  // The line under the day type chips: what the type means, and who picked it.
+  function typeText(date, info) {
+    var names = { rest: typeLabel("rest"), key: typeLabel("key"), easy: typeLabel("regular"), a: fmt(AUTO_REST_BELOW), b: fmt(AUTO_KEY_FROM) };
+    if (!info.type) return t("typeNone", names);
+    if (!info.auto) return typeHint(info.type) + " " + t("typeManual");
+    names.n = fmt(activeOn(date));
+    return typeHint(info.type) + " " + t(date === today() ? "typeAutoToday" : "typeAuto", names);
+  }
   // Meals and sources are stored as keys; older entries may hold a word in some language.
   function keyOf(prefix, keys, v) {
     v = String(v || "");
@@ -724,6 +741,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   var KCAL_PER_KG = 7700;
   // Suggested targets = usual burn for the day type + the daily balance the goal needs.
   var DEFAULT_ACTIVE = { rest: 200, regular: 700, key: 1500, maint: 400 }; // COROS active kcal until there are 3 days of a type
+  // A day without a type set by hand gets one from its COROS active kcal: rest below 450, key from 1,100,
+  // halfway between the usual active kcal of rest (200), easy (700) and key (1,500) days. Fixed, so they don't drift with the data.
+  var AUTO_REST_BELOW = 450, AUTO_KEY_FROM = 1100;
   var SHARE = { lose: { rest: 1.25, regular: 1, key: 0.75 }, gain: { rest: 0.75, regular: 1, key: 1.25 } };
   var PACE_LIMIT = { lose: 0.75, gain: 0.5 };   // % of body weight a week; faster gain is mostly fat
   var DEFAULT_RATE = { lose: 0.5, gain: 0.25 }; // % of body weight a week when there's no goal date
@@ -949,6 +969,20 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
   function dayDoc(date) { return state.docs.get("day-" + date) || null; }
   function dayType(date) { var d = dayDoc(date); return d && TYPES.indexOf(d.type) >= 0 ? d.type : null; }
+  // From COROS: what the day turned out to be (today: so far). Maintenance and carb loading are plans, so only set by hand.
+  function autoType(date) {
+    if (date > today()) return null;
+    var a = activeOn(date);
+    if (a === null) return null;
+    return a >= AUTO_KEY_FROM ? "key" : a < AUTO_REST_BELOW ? "rest" : "regular";
+  }
+  // The type a day counts as: the one set by hand, else the one from COROS, else none (the easy target applies).
+  function typeInfo(date) {
+    var m = dayType(date);
+    if (m) return { type: m, auto: false };
+    var a = autoType(date);
+    return { type: a, auto: a !== null };
+  }
   function mealsOn(date) {
     var out = [];
     state.docs.forEach(function (d, id) {
@@ -1110,7 +1144,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var end = addDays(today(), -1), vals = [];
     for (var i = 0; i < CAL_WINDOW; i++) {
       var d = addDays(end, -i), a = activeOn(d);
-      if (a !== null && (dayType(d) || "regular") === type) vals.push(a);
+      if (a !== null && (typeInfo(d).type || "regular") === type) vals.push(a);
     }
     if (vals.length < 3) return DEFAULT_ACTIVE[type];
     vals.sort(function (x, y) { return x - y; });
@@ -1200,9 +1234,12 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function setDayType(type) {
     if (!requireDb()) return;
     var date = state.selected;
+    // Tapping the type already set by hand clears it, and COROS picks again.
+    var clear = dayType(date) === type;
     write("day-" + date, function (ref) {
       var data = clone(dayDoc(date));
-      data.kind = "day"; data.date = date; data.type = type;
+      data.kind = "day"; data.date = date;
+      if (clear) delete data.type; else data.type = type;
       return ref.set(data);
     }).catch(function () {});
   }
@@ -1430,7 +1467,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 
   function renderDay() {
     var date = state.selected, s = settings();
-    var type = dayType(date);
+    var info = typeInfo(date), type = info.type;
     var tgt = s.targets[type || "regular"];
     $("#dayLabel").textContent = cap(F.long.format(parseIso(date)));
     $("#todayWrap").hidden = date === today();
@@ -1443,10 +1480,16 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       b.setAttribute("aria-pressed", String(k === type));
       b.appendChild(document.createTextNode(typeLabel(k) + " "));
       b.appendChild(el("span", "num", fmt(s.targets[k].kcal)));
+      // Picked from COROS, not by hand: drawn as a suggestion, with a small "auto" mark.
+      if (k === type && info.auto) {
+        b.classList.add("auto");
+        b.appendChild(document.createTextNode(" "));
+        b.appendChild(el("span", "auto-tag", t("typeAutoTag")));
+      }
       b.addEventListener("click", function () { setDayType(k); });
       chips.appendChild(b);
     });
-    $("#typeHint").textContent = type ? typeHint(type) : t("typePick");
+    $("#typeHint").textContent = typeText(date, info);
 
     var meals = mealsOn(date), tt = totals(meals);
     $("#kcalEaten").textContent = fmt(tt.kcal);
@@ -1481,7 +1524,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var sumK = 0, sumT = 0, nK = 0, sumB = 0, nB = 0;
     for (var i = 6; i >= 0; i--) {
       (function (date) {
-        var type = dayType(date);
+        var info = typeInfo(date), type = info.type;
         var tgt = s.targets[type || "regular"];
         var meals = mealsOn(date), tt = totals(meals);
         var dd = dayDoc(date);
@@ -1490,7 +1533,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         tr.tabIndex = 0;
         // The day type sits under the date, so the row fits a phone with intake, burn and balance side by side.
         var dc = el("td", "day-c", F.row.format(parseIso(date)));
-        dc.appendChild(el("span", "day-t", type ? typeShort(type) : "—"));
+        dc.appendChild(el("span", "day-t" + (info.auto ? " auto" : ""), type ? typeShort(type) : "—"));
         tr.appendChild(dc);
         var kc = el("td", "r num");
         if (meals.length) {

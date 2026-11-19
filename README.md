@@ -9,6 +9,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 
 - Food log from photos, labels or a few words, with protein, fat and carbs
 - Targets per day type (rest, easy, key, maintenance, carb loading), worked out from what you usually burn and the pace your goal needs, or set by hand
+- The day type picks itself from COROS: rest under 450 active kcal, key from 1,100, easy in between. Tap a type to set it yourself; tap it again to hand it back to COROS
 - For losing, gaining or keeping weight: the goal direction comes from your start and goal weight
 - Burn = base metabolism × 1.2 + COROS active calories × a correction factor, fitted from your weight trend
 - A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
