@@ -155,7 +155,11 @@ label.btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer
 .vh:focus-visible + label.btn { outline: 2px solid var(--accent); outline-offset: 2px; }
 .vh:disabled + label.btn { opacity: 0.55; cursor: default; }
 .cam-prev { display: flex; flex-wrap: wrap; gap: 8px; }
-.cam-item { display: grid; gap: 4px; width: 92px; }
+.split { display: inline-flex; }
+.split label.btn:first-of-type { border-start-end-radius: 0; border-end-end-radius: 0; }
+.split label.btn:last-of-type { border-start-start-radius: 0; border-end-start-radius: 0; margin-inline-start: 1px; padding-inline: 9px; }
+.cam-item { position: relative; display: grid; gap: 4px; width: 92px; }
+.cam-x { position: absolute; top: 4px; inset-inline-end: 4px; width: 26px; height: 26px; padding: 0; border-radius: 999px; border: 0; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 16px; line-height: 26px; }
 .cam-item img { width: 92px; height: 92px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
 .cam-item select { padding: 4px 6px; font-size: 12px; }
 #camMsg:empty { display: none; }
@@ -283,14 +287,26 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     <div class="cam-top">
       <h2 id="camH" data-i18n="camH"></h2>
       <div class="cam-btns">
-        <input type="file" id="camFoodIn" class="vh" accept="image/*" multiple>
-        <label class="btn small" for="camFoodIn"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camFood"></span></label>
-        <input type="file" id="camBodyIn" class="vh" accept="image/*" multiple>
-        <label class="btn ghost small" for="camBodyIn"><span data-i18n="camBody"></span></label>
+        <div class="split">
+          <input type="file" id="camFoodCam" class="vh" accept="image/*" capture="environment">
+          <label class="btn small" for="camFoodCam"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camFood"></span></label>
+          <input type="file" id="camFoodGal" class="vh" accept="image/*" multiple data-i18n-aria="camFoodGal">
+          <label class="btn small" for="camFoodGal"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 17.5l5-5 4 4 2.5-2.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></label>
+        </div>
+        <div class="split">
+          <input type="file" id="camBodyCam" class="vh" accept="image/*" capture="environment">
+          <label class="btn ghost small" for="camBodyCam"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camBody"></span></label>
+          <input type="file" id="camBodyGal" class="vh" accept="image/*" multiple data-i18n-aria="camBodyGal">
+          <label class="btn ghost small" for="camBodyGal"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 17.5l5-5 4 4 2.5-2.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></label>
+        </div>
       </div>
     </div>
     <form id="camForm" class="meal-form" autocomplete="off" hidden>
       <div class="cam-prev" id="camPrev"></div>
+      <div class="cam-btns" id="camMore">
+        <label class="btn ghost small" id="camAddCam"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camAdd"></span></label>
+        <label class="btn ghost small" id="camAddGal"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 17.5l5-5 4 4 2.5-2.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span data-i18n="camFromGal"></span></label>
+      </div>
       <label class="field" for="camSaid" id="camSaidWrap"><span data-i18n="camSaidLbl"></span><textarea id="camSaid" rows="2" maxlength="500" data-i18n-ph="camSaidPh"></textarea></label>
       <div class="actions">
         <button class="btn" type="submit" id="camGo"></button>
@@ -488,7 +504,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 8,
+  "_version": 9,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -616,6 +632,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "camBusy": "Saved without an estimate: Claude is busy right now. Ask in chat to estimate it.",
   "camSaved": "Saved to Progress photos.",
   "camFail": "Couldn't save the photos. Try again.",
+  "camFoodGal": "Food photo from gallery",
+  "camBodyGal": "Progress photo from gallery",
+  "camAdd": "Add photo",
+  "camFromGal": "From gallery",
+  "camRemove": "Remove photo",
   "camNoPicker": "No photo picker? The app you're viewing this in may not open one from a page. Open this page in your phone's browser, or send the photo to Claude in chat.",
   "pendingTag": "no estimate yet",
   "wHint": "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
@@ -2085,19 +2106,25 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     try { assets = await window.claude.use("assets"); } catch (e) { assets = null; }
     $("#camCard").hidden = !assets;
   }
+  var CAM_INPUTS = { food: ["#camFoodCam", "#camFoodGal"], body: ["#camBodyCam", "#camBodyGal"] };
+  // Each pick adds to the photos already chosen for the same kind; picking the other kind starts over.
   function camPicked(kind, list) {
-    var files = Array.prototype.slice.call(list || []).filter(function (f) { return /^image\//.test(f.type); }).slice(0, CAM_MAX[kind]);
+    var files = Array.prototype.slice.call(list || []).filter(function (f) { return /^image\//.test(f.type); });
+    camResetInputs();
     if (!files.length || cam.busy) return;
-    camClear();
+    if (cam.kind !== kind) camClear();
     cam.kind = kind;
-    var prev = $("#camPrev");
-    files.forEach(function (f, i) {
-      var item = { file: f, url: URL.createObjectURL(f), view: PHOTO_VIEWS[i] || "front" };
+    files.slice(0, CAM_MAX[kind] - cam.items.length).forEach(function (f) {
+      var item = { file: f, url: URL.createObjectURL(f), view: PHOTO_VIEWS[cam.items.length] || "front" };
       cam.items.push(item);
-      var box = el("div", "cam-item"), img = el("img");
+      var box = el("div", "cam-item"), img = el("img"), x = el("button", "cam-x", "×");
       img.src = item.url;
       img.alt = "";
       box.appendChild(img);
+      x.type = "button";
+      x.setAttribute("aria-label", t("camRemove"));
+      x.addEventListener("click", function () { camRemove(item, box); });
+      box.appendChild(x);
       if (kind === "body") {
         var sel = el("select");
         sel.setAttribute("aria-label", t("camViewLbl"));
@@ -2106,13 +2133,27 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         sel.addEventListener("change", function () { item.view = sel.value; });
         box.appendChild(sel);
       }
-      prev.appendChild(box);
+      $("#camPrev").appendChild(box);
     });
+    $("#camAddCam").htmlFor = CAM_INPUTS[kind][0].slice(1);
+    $("#camAddGal").htmlFor = CAM_INPUTS[kind][1].slice(1);
+    $("#camMore").hidden = cam.items.length >= CAM_MAX[kind];
     $("#camSaidWrap").hidden = kind !== "food";
     $("#camGo").textContent = t(kind === "food" ? "camLog" : "camSave");
     $("#camForm").hidden = false;
     camMsg("");
-    if (kind === "food") $("#camSaid").focus();
+  }
+  function camRemove(item, box) {
+    if (cam.busy) return;
+    URL.revokeObjectURL(item.url);
+    cam.items.splice(cam.items.indexOf(item), 1);
+    box.remove();
+    if (!cam.items.length) { camClear(); return; }
+    $("#camMore").hidden = false;
+    $("#camAddCam").focus();
+  }
+  function camResetInputs() {
+    ["#camFoodCam", "#camFoodGal", "#camBodyCam", "#camBodyGal"].forEach(function (q) { $(q).value = ""; });
   }
   function camClear() {
     cam.items.forEach(function (it) { URL.revokeObjectURL(it.url); });
@@ -2121,26 +2162,26 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#camPrev").textContent = "";
     $("#camSaid").value = "";
     $("#camForm").hidden = true;
-    $("#camFoodIn").value = "";
-    $("#camBodyIn").value = "";
+    camResetInputs();
   }
   function camMsg(text) { $("#camMsg").textContent = text; }
   // Some hosts (the Claude phone app's viewer) ignore file inputs. When tapping a button neither hides
   // the page nor takes focus away (what opening a picker does), say so and point to the alternatives.
   function watchPicker() {
-    var opened = false;
+    var opened = false, before = cam.items.length;
     function mark() { opened = true; }
     window.addEventListener("blur", mark);
     document.addEventListener("visibilitychange", mark);
     setTimeout(function () {
       window.removeEventListener("blur", mark);
       document.removeEventListener("visibilitychange", mark);
-      if (!opened && !cam.items.length && !cam.busy) camMsg(t("camNoPicker"));
+      if (!opened && cam.items.length === before && !cam.busy) camMsg(t("camNoPicker"));
     }, 2000);
   }
   function camLock(on) {
     cam.busy = on;
-    ["#camGo", "#camCancel", "#camFoodIn", "#camBodyIn"].forEach(function (q) { $(q).disabled = on; });
+    ["#camGo", "#camCancel", "#camFoodCam", "#camFoodGal", "#camBodyCam", "#camBodyGal"].forEach(function (q) { $(q).disabled = on; });
+    document.querySelectorAll(".cam-x").forEach(function (b) { b.disabled = on; });
   }
   // A JPEG of at most CAM_MAX_SIDE px a side: smaller uploads, and the browser applies the photo's rotation.
   function shrink(file) {
@@ -2649,8 +2690,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#sLang").addEventListener("change", function (e) { setLang(e.target.value, true); });
     $("#corosBtn").addEventListener("click", askCoros);
     $("#photosDetails").addEventListener("toggle", function () { if ($("#photosDetails").open) loadPhotos(); });
-    $("#camFoodIn").addEventListener("change", function (e) { camPicked("food", e.target.files); });
-    $("#camBodyIn").addEventListener("change", function (e) { camPicked("body", e.target.files); });
+    Object.keys(CAM_INPUTS).forEach(function (kind) {
+      CAM_INPUTS[kind].forEach(function (q) { $(q).addEventListener("change", function (e) { camPicked(kind, e.target.files); }); });
+    });
     $("#camForm").addEventListener("submit", camSubmit);
     document.querySelectorAll("#camCard label.btn").forEach(function (l) { l.addEventListener("click", watchPicker); });
     $("#camCancel").addEventListener("click", function () { camClear(); camMsg(""); });
