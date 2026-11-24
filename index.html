@@ -488,7 +488,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 7,
+  "_version": 8,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -616,6 +616,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "camBusy": "Saved without an estimate: Claude is busy right now. Ask in chat to estimate it.",
   "camSaved": "Saved to Progress photos.",
   "camFail": "Couldn't save the photos. Try again.",
+  "camNoPicker": "No photo picker? The app you're viewing this in may not open one from a page. Open this page in your phone's browser, or send the photo to Claude in chat.",
   "pendingTag": "no estimate yet",
   "wHint": "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
   "wReadout": "{d}: {w} kg, 7-day average {a}",
@@ -2124,6 +2125,19 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#camBodyIn").value = "";
   }
   function camMsg(text) { $("#camMsg").textContent = text; }
+  // Some hosts (the Claude phone app's viewer) ignore file inputs. When tapping a button neither hides
+  // the page nor takes focus away (what opening a picker does), say so and point to the alternatives.
+  function watchPicker() {
+    var opened = false;
+    function mark() { opened = true; }
+    window.addEventListener("blur", mark);
+    document.addEventListener("visibilitychange", mark);
+    setTimeout(function () {
+      window.removeEventListener("blur", mark);
+      document.removeEventListener("visibilitychange", mark);
+      if (!opened && !cam.items.length && !cam.busy) camMsg(t("camNoPicker"));
+    }, 2000);
+  }
   function camLock(on) {
     cam.busy = on;
     ["#camGo", "#camCancel", "#camFoodIn", "#camBodyIn"].forEach(function (q) { $(q).disabled = on; });
@@ -2638,6 +2652,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#camFoodIn").addEventListener("change", function (e) { camPicked("food", e.target.files); });
     $("#camBodyIn").addEventListener("change", function (e) { camPicked("body", e.target.files); });
     $("#camForm").addEventListener("submit", camSubmit);
+    document.querySelectorAll("#camCard label.btn").forEach(function (l) { l.addEventListener("click", watchPicker); });
     $("#camCancel").addEventListener("click", function () { camClear(); camMsg(""); });
     $("#phView").addEventListener("click", closePhoto);
     $("#phView").addEventListener("keydown", function (e) { if (e.key === "Escape") { e.preventDefault(); closePhoto(); } });
