@@ -21,6 +21,8 @@ Reply in the user's language. Write `desc` and `note` in the user's language too
 - **Days run from midnight to midnight** in the user's local time, the same as COROS counts calories. Food eaten after midnight goes to the new date, even before sleep.
 - **When no label or weight is visible, search the web** for the product's package size and nutrition before estimating. For dishes, estimate the portion from what is visible and say what you assumed in `note`.
 - **Write each meal right away**, one write per message, as soon as the user sends it. Do not batch a day's meals.
+- **Keep the user's words and photos with the meal**: their message text, as written, in `said`; their food photos uploaded as assets of the page (JPEG, about 800 px on the long side), with the asset ids in `photos`.
+- **Meals marked `pending`** were saved from the page's camera without an estimate. When the user asks, or when you next log food for them, open the meal's photos (its assets), estimate it like any other meal using `said`, and update `desc`, `note`, `kcal`, `p`, `f`, `c`, `src` and `title`, deleting `pending` (`{"pending": {"__delete__": true}}`).
 - After writing, reply briefly: the breakdown (item → kcal), the entry's kcal and protein, and the day so far against the target. Read the day's documents to total them; other chats may have written entries too.
 - Corrections ("I ate the whole lasagna", "remove the salad"): read the document, then update it with its current version.
 
@@ -40,6 +42,8 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
   "note": "Estimated from the photo: ~150 g meat, ~20 g oil",
   "kcal": 1150, "p": 50, "f": 41, "c": 144,
   "src": "photo",
+  "said": "Plov, tomato salad, a can of coke",
+  "photos": ["3f9c0e…", "a17b52…"],
   "createdAt": 1794127380000
 }
 ```
@@ -48,7 +52,13 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
 - `title`: `breakfast` | `lunch` | `dinner` | `snack` | `workout` (fuel during training).
 - `src`: `photo` | `label` (nutrition label seen) | `said` (described, no photo) | `manual`.
 - `kcal`, `p`, `f`, `c`: whole numbers (kcal, grams of protein, fat, carbs). Keep `kcal` close to 4p + 9f + 4c unless alcohol or fibre explains the gap.
+- `said`: optional, the user's own message about this meal, word for word, in any language. The page shows it in quotes.
+- `photos`: optional, up to 12 asset ids of the meal's photos. The page shows them as thumbnails.
+- `pending`: set by the page's camera on a meal it couldn't estimate (no `kcal` yet). See the logging rules.
 - `createdAt`: current time in milliseconds.
+
+**Progress photo**, id `photo-YYYYMMDD-<view>` (add a suffix if that id is taken): `{"kind": "photo", "date": "2026-11-24", "view": "front", "asset": "465d76…", "createdAt": 1795497600000}`
+- `view`: `front` | `side` | `back`. `asset`: the photo's asset id. The page groups photos by date and shows that day's weight. When the user sends progress photos, crop them to the body (3:4 works well), upload them as assets and write one document per photo.
 
 **Day**, id `day-YYYY-MM-DD`: `{"kind": "day", "date": "2026-11-08", "type": "maint", "weight": 94.6}`
 - `type`: `rest` (no training) | `regular` (easy run up to 1.5 h) | `key` (intervals, long run, big climbing, race-like) | `maint` (maintenance, eat about what you burn: taper, race, recovery, travel) | `carb` (carb loading 1–2 days before a race).
@@ -80,4 +90,4 @@ All fields are optional. `birthYear` is the year of birth; older settings may ho
 
 ## 5. Privacy
 
-Each person's data sits in their own `data/users/<id>/` folder, which nobody else can read, the page owner included. Do not read or write other folders. The page reads only the daily COROS summary and the training schedule for the next two weeks, and only after the user allows it.
+Each person's data sits in their own `data/users/<id>/` folder, which nobody else can read, the page owner included. Photos are the page's private assets, linked only from the user's own documents. Do not read or write other folders. The page reads only the daily COROS summary and the training schedule for the next two weeks, and only after the user allows it.

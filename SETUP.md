@@ -25,8 +25,10 @@ Never retype, summarise or reformat them. If you can't get the raw files (for ex
 3. Then declare its capabilities (a new page is published first, then declared), exactly:
 
    ```json
-   {"db": {}, "user": {}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData", "queryTrainingSchedule"]}]}}
+   {"db": {}, "user": {}, "assets": {}, "sample": {"images": true}, "mcp": {"servers": [{"server": "COROS", "tools": ["queryDailyHealthData", "queryTrainingSchedule"]}]}}
    ```
+
+   `assets` keeps meal and progress photos. `sample` lets the page's camera send a food photo to Claude for an estimate; it runs on the viewer's own Claude usage and asks them once before the first estimate.
 
    If the user hasn't connected COROS to Claude, declare the same anyway and suggest connecting it: the page works without it and picks up burn once COROS is connected.
 

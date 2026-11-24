@@ -8,6 +8,9 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 </p>
 
 - Food log from photos, labels or a few words, with protein, fat and carbs
+- Each meal keeps its photos and your own words; tap a thumbnail to see it full size
+- A camera at the top of the page: snap a meal (with a comment if you like) and Claude estimates and logs it, or snap a progress photo
+- Progress photos by date, with that day's weight
 - Targets per day type (rest, easy, key, maintenance, carb loading), worked out from what you usually burn and the pace your goal needs, or set by hand
 - The day type picks itself from COROS: rest under 450 active kcal, key from 1,100, easy in between. Days ahead follow the workouts in your COROS training schedule, and today counts its planned workout from the morning. Tap a type to set it yourself; tap it again to hand it back to COROS
 - For losing, gaining or keeping weight: the goal direction comes from your start and goal weight
@@ -49,6 +52,8 @@ Talk to Claude in any chat:
 - *How am I doing today?*
 
 Days run from midnight to midnight, the same as COROS counts calories. When there's no label or weight in the photo, Claude looks the product up online instead of guessing.
+
+Or log from the page itself: tap **Food** in the camera card, take or pick the photos, add a comment and tap **Log it**. Claude estimates the meal right there (the first time, Claude asks you to allow it). If it can't, the meal is saved with its photos and marked *no estimate yet*; ask Claude in a chat to estimate it. **Progress photo** saves front, side or back photos under today's date.
 
 You can also add or fix entries by hand on the page.
 

@@ -147,6 +147,23 @@ textarea { resize: vertical; min-height: 60px; }
 .meal-desc { font-size: 14px; overflow-wrap: anywhere; }
 .meal-note { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 .meal-macros { font-size: 12px; color: var(--muted); }
+.vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.cam-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.cam-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+label.btn { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.cam-ic { width: 18px; height: 18px; flex: none; }
+.vh:focus-visible + label.btn { outline: 2px solid var(--accent); outline-offset: 2px; }
+.vh:disabled + label.btn { opacity: 0.55; cursor: default; }
+.cam-prev { display: flex; flex-wrap: wrap; gap: 8px; }
+.cam-item { display: grid; gap: 4px; width: 92px; }
+.cam-item img { width: 92px; height: 92px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
+.cam-item select { padding: 4px 6px; font-size: 12px; }
+#camMsg:empty { display: none; }
+.tag.wait { color: var(--warn); border-color: var(--warn); }
+.meal-said { font-size: 13px; font-style: italic; overflow-wrap: anywhere; }
+.meal-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.meal-ph { width: 64px; height: 64px; padding: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--line); cursor: zoom-in; }
+.meal-ph img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .meal-side { display: grid; justify-items: end; align-content: start; gap: 6px; }
 .meal-kcal { font: 600 18px/1.2 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .meal-actions { display: flex; gap: 4px; }
@@ -173,6 +190,17 @@ details[open] > summary { margin-bottom: 10px; }
 .tile-s { font-size: 12px; color: var(--muted); }
 .tile-v.good { color: var(--ok); }
 .tile-v.bad { color: var(--warn); }
+
+.photos { display: grid; gap: 14px; }
+.ph-day { display: grid; gap: 6px; }
+.ph-head { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: none; letter-spacing: 0; }
+.ph-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.ph-thumb { position: relative; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--line); aspect-ratio: 3 / 4; cursor: zoom-in; }
+.ph-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ph-cap { position: absolute; inset-inline-start: 6px; bottom: 6px; padding: 1px 7px; border-radius: 999px; font-size: 11px; background: rgba(0, 0, 0, 0.55); color: #fff; }
+.ph-view { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, 0.92); cursor: zoom-out; }
+.ph-view img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+.ph-close { position: absolute; top: 10px; inset-inline-end: 10px; color: #fff; background: rgba(0, 0, 0, 0.45); border-color: transparent; }
 
 .scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -250,6 +278,27 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       <div class="actions"><button class="btn small" type="button" id="onbBtn" data-i18n="onbBtn"></button></div>
     </div>
   </header>
+
+  <section class="card" aria-labelledby="camH" id="camCard" hidden>
+    <div class="cam-top">
+      <h2 id="camH" data-i18n="camH"></h2>
+      <div class="cam-btns">
+        <input type="file" id="camFoodIn" class="vh" accept="image/*" multiple>
+        <label class="btn small" for="camFoodIn"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camFood"></span></label>
+        <input type="file" id="camBodyIn" class="vh" accept="image/*" multiple>
+        <label class="btn ghost small" for="camBodyIn"><span data-i18n="camBody"></span></label>
+      </div>
+    </div>
+    <form id="camForm" class="meal-form" autocomplete="off" hidden>
+      <div class="cam-prev" id="camPrev"></div>
+      <label class="field" for="camSaid" id="camSaidWrap"><span data-i18n="camSaidLbl"></span><textarea id="camSaid" rows="2" maxlength="500" data-i18n-ph="camSaidPh"></textarea></label>
+      <div class="actions">
+        <button class="btn" type="submit" id="camGo"></button>
+        <button class="btn ghost" type="button" id="camCancel" data-i18n="cancel"></button>
+      </div>
+    </form>
+    <p class="hint" id="camMsg" aria-live="polite"></p>
+  </section>
 
   <section class="card" aria-labelledby="dayH">
     <div class="day-nav">
@@ -356,6 +405,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     <p class="hint" data-i18n="wHint"></p>
   </section>
 
+  <section class="card" aria-labelledby="phH" id="photosCard" hidden>
+    <details id="photosDetails">
+      <summary id="phH" data-i18n="photosH"></summary>
+      <div class="photos" id="photosBody"></div>
+      <p class="hint" data-i18n="photosHint"></p>
+    </details>
+  </section>
+
   <section class="card" aria-labelledby="setH" id="settingsCard">
     <details id="settingsDetails">
       <summary id="setH" data-i18n="setH"></summary>
@@ -410,6 +467,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     </details>
   </section>
 </main>
+<div class="ph-view" id="phView" role="dialog" aria-modal="true" data-i18n-aria="photosH" hidden>
+  <img id="phViewImg" alt="">
+  <button class="icon ph-close" id="phClose" type="button" data-i18n-aria="photoClose">×</button>
+</div>
 <div class="picker" id="picker" role="dialog" aria-labelledby="pkTitle" hidden>
   <div class="pk-nav">
     <button class="icon" id="pkPrev" type="button" data-i18n-aria="prevMonth">‹</button>
@@ -427,7 +488,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 5,
+  "_version": 7,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -529,6 +590,33 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "ebAria": "Eaten and burned per day for 14 days; details in the table below",
   "wH": "Weight",
   "wEmpty": "Weigh yourself in the morning before eating and log it. Dots and a 7-day average will appear here.",
+  "photosH": "Progress photos",
+  "photosHint": "Only you can see these. Add new ones with the camera at the top, or send them to Claude.",
+  "photo.front": "Front",
+  "photo.side": "Side",
+  "photo.back": "Back",
+  "photoAlt": "Progress photo from {d}",
+  "photoAltView": "Progress photo from {d}, {v}",
+  "photoDayW": "{d} · {w} kg",
+  "photoClose": "Close",
+  "saidQuote": "“{s}”",
+  "mealPhotoAlt": "Photo {n}: {m}",
+  "camH": "Camera",
+  "camFood": "Food",
+  "camBody": "Progress photo",
+  "camSaidLbl": "Comment (optional)",
+  "camSaidPh": "e.g. ate half, two of these, no sauce",
+  "camViewLbl": "View",
+  "camLog": "Log it",
+  "camSave": "Save",
+  "camUploading": "Uploading…",
+  "camAsking": "Claude is estimating the meal…",
+  "camLogged": "Logged: {kcal} kcal. Check the entry below and edit it if something is off.",
+  "camPending": "Saved without an estimate. Ask Claude in chat to estimate it.",
+  "camBusy": "Saved without an estimate: Claude is busy right now. Ask in chat to estimate it.",
+  "camSaved": "Saved to Progress photos.",
+  "camFail": "Couldn't save the photos. Try again.",
+  "pendingTag": "no estimate yet",
   "wHint": "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
   "wReadout": "{d}: {w} kg, 7-day average {a}",
   "goalShort": "goal",
@@ -1448,6 +1536,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
 
   var pendingDelete = null, deleteTimer = null;
+  // A meal's photos are asset ids of the page; `said` is the user's own message about it.
+  var ASSET_ID = /^[A-Za-z0-9_-]{8,128}$/;
+  function mealPhotos(d) {
+    return Array.isArray(d.photos) ? d.photos.filter(function (x) { return typeof x === "string" && ASSET_ID.test(x); }).slice(0, 12) : [];
+  }
   function renderMeals(meals) {
     var box = $("#meals");
     box.textContent = "";
@@ -1463,7 +1556,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (d.time) head.appendChild(el("span", "meal-time num", String(d.time)));
       head.appendChild(el("span", "meal-title", mealTitle(d)));
       if (d.src) head.appendChild(el("span", "tag", srcTitle(d.src)));
+      if (d.pending && !finite(d.kcal)) head.appendChild(el("span", "tag wait", t("pendingTag")));
       main.appendChild(head);
+      if (typeof d.said === "string" && d.said.trim()) main.appendChild(el("div", "meal-said", t("saidQuote", { s: d.said.trim() })));
       if (d.desc) main.appendChild(el("div", "meal-desc", String(d.desc)));
       if (d.note) main.appendChild(el("div", "meal-note", String(d.note)));
       var mac = [];
@@ -1472,6 +1567,22 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (finite(d.f)) mac.push(L[1] + " " + fmt(d.f));
       if (finite(d.c)) mac.push(L[2] + " " + fmt(d.c));
       if (mac.length) main.appendChild(el("div", "meal-macros num", mac.join(" · ")));
+      var ph = mealPhotos(d);
+      if (ph.length) {
+        var strip = el("div", "meal-photos");
+        ph.forEach(function (id, i) {
+          var url = "/_blob/" + id, b = el("button", "meal-ph"), img = el("img");
+          b.type = "button";
+          img.alt = t("mealPhotoAlt", { m: mealTitle(d), n: i + 1 });
+          img.loading = "lazy";
+          img.decoding = "async";
+          img.src = url;
+          b.appendChild(img);
+          b.addEventListener("click", function () { openPhoto(url, img.alt); });
+          strip.appendChild(b);
+        });
+        main.appendChild(strip);
+      }
       var side = el("div", "meal-side");
       side.appendChild(el("div", "meal-kcal num", finite(d.kcal) ? fmt(d.kcal) : "—"));
       var acts = el("div", "meal-actions");
@@ -1902,6 +2013,223 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#kInfo").textContent = t("kBase") + txt;
   }
 
+  // ---------- progress photos ----------
+  // Photo docs point at the page's own assets; the images load only once the section is opened.
+  var PHOTO_VIEWS = ["front", "side", "back"];
+  function photoDocs() {
+    var out = [];
+    state.docs.forEach(function (d, id) {
+      if (d && d.kind === "photo" && isDate(d.date) && typeof d.asset === "string" && ASSET_ID.test(d.asset)) out.push({ id: id, d: d });
+    });
+    return out;
+  }
+  function photoRank(v) { var i = PHOTO_VIEWS.indexOf(v); return i < 0 ? PHOTO_VIEWS.length : i; }
+  function renderPhotos() {
+    var list = photoDocs(), body = $("#photosBody");
+    $("#photosCard").hidden = !list.length;
+    body.textContent = "";
+    if (!list.length) return;
+    var open = $("#photosDetails").open, byDate = new Map(), wmap = new Map();
+    weights().forEach(function (x) { wmap.set(x.date, x.w); });
+    list.forEach(function (x) { if (!byDate.has(x.d.date)) byDate.set(x.d.date, []); byDate.get(x.d.date).push(x); });
+    Array.from(byDate.keys()).sort().reverse().forEach(function (date) {
+      var items = byDate.get(date).sort(function (a, b) { return photoRank(a.d.view) - photoRank(b.d.view) || (Number(a.d.createdAt) || 0) - (Number(b.d.createdAt) || 0); });
+      var dl = F.date.format(parseIso(date)), w = wmap.get(date);
+      var day = el("div", "ph-day"), row = el("div", "ph-row");
+      day.appendChild(el("h3", "ph-head", finite(w) ? t("photoDayW", { d: dl, w: fmt1(w) }) : dl));
+      items.forEach(function (x) {
+        var url = "/_blob/" + x.d.asset, view = PHOTO_VIEWS.indexOf(x.d.view) >= 0 ? t("photo." + x.d.view) : "";
+        var b = el("button", "ph-thumb"), img = el("img");
+        b.type = "button";
+        img.alt = view ? t("photoAltView", { d: dl, v: view }) : t("photoAlt", { d: dl });
+        img.decoding = "async";
+        if (open) img.src = url; else img.setAttribute("data-src", url);
+        b.appendChild(img);
+        if (view) b.appendChild(el("span", "ph-cap", view));
+        b.addEventListener("click", function () { openPhoto(url, img.alt); });
+        row.appendChild(b);
+      });
+      day.appendChild(row);
+      body.appendChild(day);
+    });
+  }
+  function loadPhotos() {
+    document.querySelectorAll("#photosBody img[data-src]").forEach(function (i) { i.src = i.getAttribute("data-src"); i.removeAttribute("data-src"); });
+  }
+  var photoReturn = null;
+  function openPhoto(url, alt) {
+    photoReturn = document.activeElement;
+    var img = $("#phViewImg");
+    img.src = url;
+    img.alt = alt || "";
+    $("#phView").hidden = false;
+    $("#phClose").focus();
+  }
+  function closePhoto() {
+    var v = $("#phView");
+    if (v.hidden) return;
+    v.hidden = true;
+    $("#phViewImg").removeAttribute("src");
+    if (photoReturn && photoReturn.focus) photoReturn.focus();
+  }
+
+  // ---------- camera ----------
+  // Food photos are uploaded as the page's assets, estimated by Claude (sample) and saved as a meal with the
+  // photos and the user's own words; without an estimate the meal waits, `pending`, for Claude in chat.
+  // Progress photos are uploaded and saved as photo docs with their view.
+  var CAM_MAX_SIDE = 1280, CAM_MAX = { food: 4, body: 3 };
+  var cam = { kind: null, items: [], busy: false };
+  async function setupCam() {
+    var assets = null;
+    try { assets = await window.claude.use("assets"); } catch (e) { assets = null; }
+    $("#camCard").hidden = !assets;
+  }
+  function camPicked(kind, list) {
+    var files = Array.prototype.slice.call(list || []).filter(function (f) { return /^image\//.test(f.type); }).slice(0, CAM_MAX[kind]);
+    if (!files.length || cam.busy) return;
+    camClear();
+    cam.kind = kind;
+    var prev = $("#camPrev");
+    files.forEach(function (f, i) {
+      var item = { file: f, url: URL.createObjectURL(f), view: PHOTO_VIEWS[i] || "front" };
+      cam.items.push(item);
+      var box = el("div", "cam-item"), img = el("img");
+      img.src = item.url;
+      img.alt = "";
+      box.appendChild(img);
+      if (kind === "body") {
+        var sel = el("select");
+        sel.setAttribute("aria-label", t("camViewLbl"));
+        PHOTO_VIEWS.forEach(function (v) { var o = el("option", "", t("photo." + v)); o.value = v; sel.appendChild(o); });
+        sel.value = item.view;
+        sel.addEventListener("change", function () { item.view = sel.value; });
+        box.appendChild(sel);
+      }
+      prev.appendChild(box);
+    });
+    $("#camSaidWrap").hidden = kind !== "food";
+    $("#camGo").textContent = t(kind === "food" ? "camLog" : "camSave");
+    $("#camForm").hidden = false;
+    camMsg("");
+    if (kind === "food") $("#camSaid").focus();
+  }
+  function camClear() {
+    cam.items.forEach(function (it) { URL.revokeObjectURL(it.url); });
+    cam.items = [];
+    cam.kind = null;
+    $("#camPrev").textContent = "";
+    $("#camSaid").value = "";
+    $("#camForm").hidden = true;
+    $("#camFoodIn").value = "";
+    $("#camBodyIn").value = "";
+  }
+  function camMsg(text) { $("#camMsg").textContent = text; }
+  function camLock(on) {
+    cam.busy = on;
+    ["#camGo", "#camCancel", "#camFoodIn", "#camBodyIn"].forEach(function (q) { $(q).disabled = on; });
+  }
+  // A JPEG of at most CAM_MAX_SIDE px a side: smaller uploads, and the browser applies the photo's rotation.
+  function shrink(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, CAM_MAX_SIDE / Math.max(w, h));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * k));
+        c.height = Math.max(1, Math.round(h * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { if (b) resolve(b); else reject(new Error("encode")); }, "image/jpeg", 0.8);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("decode")); };
+      img.src = url;
+    });
+  }
+  function langName() {
+    try { return new Intl.DisplayNames(["en"], { type: "language" }).of(state.lang) || "English"; } catch (e) { return "English"; }
+  }
+  async function estimateMeal(blobs, said, time) {
+    var sample = null;
+    try { sample = await window.claude.use("sample"); } catch (e) { sample = null; }
+    if (!sample) return null;
+    var lim = await sample.limits().catch(function () { return null; });
+    if (!lim || !lim.images) return null;
+    var prompt = [
+      "You log food for a person's nutrition diary. The attached photos show what they ate. Estimate it.",
+      "Rules:",
+      "- What is in the photos is what was eaten, unless their comment says otherwise (only part of it, shared, more than shown).",
+      "- If a nutrition label is readable, use it and set src to \"label\"; otherwise estimate the portions from the photo and set src to \"photo\". For packaged food without a readable label, use the usual pack size and nutrition of that product.",
+      "- desc: the items with amounts and kcal in brackets, separated by \"; \", e.g. \"Plov with beef ~400 g (~760); tomato salad (~30)\".",
+      "- note: one or two sentences on what you assumed (portion weights, kcal per 100 g, label numbers).",
+      "- kcal, p (protein, g), f (fat, g), c (carbs, g): whole numbers, kcal close to 4p + 9f + 4c.",
+      "- title: breakfast, lunch, dinner, snack or workout (food during training), judged from the food and the time.",
+      "- Write desc and note in " + langName() + ".",
+      "Local time: " + time + ".",
+      "Their comment: " + (said || "(none)"),
+      "Reply with only a JSON object like {\"title\":\"lunch\",\"desc\":\"...\",\"note\":\"...\",\"kcal\":650,\"p\":32,\"f\":22,\"c\":80,\"src\":\"photo\"}."
+    ].join("\n");
+    var v = await sample.json(prompt, { images: blobs.slice(0, lim.images.maxCount || blobs.length), modelTier: "default", cache: false });
+    if (!v || typeof v !== "object") return null;
+    var n = function (x) { x = Number(x); return isFinite(x) && x >= 0 ? Math.round(x) : null; };
+    var kcal = n(v.kcal);
+    if (kcal === null) return null;
+    return {
+      title: MEAL_KEYS.indexOf(v.title) >= 0 ? v.title : null,
+      desc: String(v.desc || "").trim().slice(0, 600), note: String(v.note || "").trim().slice(0, 600),
+      kcal: kcal, p: n(v.p), f: n(v.f), c: n(v.c), src: v.src === "label" ? "label" : "photo"
+    };
+  }
+  async function camSubmit(e) {
+    e.preventDefault();
+    if (cam.busy || !cam.items.length || !requireDb()) return;
+    var assets = null;
+    try { assets = await window.claude.use("assets"); } catch (x) { assets = null; }
+    if (!assets) { camMsg(t("camFail")); return; }
+    var kind = cam.kind, items = cam.items.slice(), said = $("#camSaid").value.trim();
+    var date = today(), time = nowTime(), now = Date.now(), stamp = date.replace(/-/g, "");
+    camLock(true);
+    camMsg(t("camUploading"));
+    try {
+      var blobs = [], ids = [], i;
+      for (i = 0; i < items.length; i++) blobs.push(await shrink(items[i].file));
+      for (i = 0; i < blobs.length; i++) ids.push((await assets.upload(blobs[i])).id);
+      if (kind === "body") {
+        for (i = 0; i < ids.length; i++) {
+          var doc = { kind: "photo", date: date, view: items[i].view, asset: ids[i], createdAt: now + i };
+          await write("photo-" + stamp + "-" + doc.view + "-" + (now + i).toString(36), function (ref) { return ref.set(doc); });
+        }
+        camClear();
+        camMsg(t("camSaved"));
+        return;
+      }
+      var data = { kind: "meal", date: date, time: time, title: guessTitle(), photos: ids, src: "photo", createdAt: now };
+      if (said) data.said = said;
+      camMsg(t("camAsking"));
+      var est = null, why = "";
+      try { est = await estimateMeal(blobs, said, time); } catch (x) { why = x && x.code; }
+      if (est) {
+        if (est.title) data.title = est.title;
+        data.desc = est.desc;
+        if (est.note) data.note = est.note;
+        data.kcal = est.kcal;
+        ["p", "f", "c"].forEach(function (m) { if (est[m] !== null) data[m] = est[m]; });
+        data.src = est.src;
+      } else {
+        data.desc = "";
+        data.pending = true;
+      }
+      await write("meal-" + stamp + "-" + time.replace(":", "") + "-cam" + now.toString(36).slice(-5), function (ref) { return ref.set(data); });
+      state.selected = date;
+      camClear();
+      camMsg(est ? t("camLogged", { kcal: fmt(est.kcal) }) : why === "rate_limited" ? t("camBusy") : t("camPending"));
+      renderAll();
+    } catch (x) {
+      camMsg(t("camFail"));
+    } finally {
+      camLock(false);
+    }
+  }
+
   function renderAll() {
     if (!state.selected) state.selected = today();
     renderHeader();
@@ -1911,6 +2239,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     renderChart();
     renderSettings();
     renderKInfo();
+    renderPhotos();
   }
 
   // ---------- meal form ----------
@@ -1974,6 +2303,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     data.time = $("#mTime").value || "";
     data.desc = desc;
     data.kcal = Math.round(kcal);
+    delete data.pending;
     ["p", "f", "c"].forEach(function (k) { var v = ({ p: p, f: f, c: c })[k]; if (isFinite(v)) data[k] = Math.round(v); else delete data[k]; });
     if (!existing) { data.src = "manual"; data.createdAt = Date.now(); }
     var id = state.editing || ("meal-" + data.date.replace(/-/g, "") + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5));
@@ -2304,6 +2634,13 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     resetForm();
     $("#sLang").addEventListener("change", function (e) { setLang(e.target.value, true); });
     $("#corosBtn").addEventListener("click", askCoros);
+    $("#photosDetails").addEventListener("toggle", function () { if ($("#photosDetails").open) loadPhotos(); });
+    $("#camFoodIn").addEventListener("change", function (e) { camPicked("food", e.target.files); });
+    $("#camBodyIn").addEventListener("change", function (e) { camPicked("body", e.target.files); });
+    $("#camForm").addEventListener("submit", camSubmit);
+    $("#camCancel").addEventListener("click", function () { camClear(); camMsg(""); });
+    $("#phView").addEventListener("click", closePhoto);
+    $("#phView").addEventListener("keydown", function (e) { if (e.key === "Escape") { e.preventDefault(); closePhoto(); } });
     $("#onbBtn").addEventListener("click", function () {
       $("#settingsDetails").open = true;
       $("#settingsCard").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2343,6 +2680,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     try { uid = user ? await user.id() : null; } catch (e) { uid = null; }
     if (!uid) { setStatus(t("stSignIn"), "bad"); return; }
     state.col = db.collection("data/users/" + uid);
+    setupCam();
     setStatus(t("stLoading"));
     var timer = setTimeout(function () {
       if (!state.loaded) setStatus(t("stSlow"), "warn");
