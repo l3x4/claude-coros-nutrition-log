@@ -4,7 +4,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 
 <p>
   <img src="docs/day.png" width="360" alt="Day view: day type, eaten vs target, burn and balance, macros, food log">
-  <img src="docs/burn-chart.png" width="360" alt="Eaten and burned over 14 days">
+  <img src="docs/burn-chart.png" width="360" alt="Eaten, burned and weight over 14 days">
 </p>
 
 - Food log from photos, labels or a few words, with protein, fat and carbs
@@ -16,7 +16,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
 - For losing, gaining or keeping weight: the goal direction comes from your start and goal weight
 - Burn = base metabolism × 1.2 + COROS active calories × a correction factor, fitted from your weight trend
 - A goal weight and date: the pace you need (kg a week, kcal a day) next to your actual pace, and the planned path on the weight chart
-- Morning weight with a 7-day average, weekly balance, 14-day eaten vs burned chart
+- Morning weight with a 7-day average, weekly balance, and a 14-day chart of eaten vs burned with weight on top
 - Any language: the page ships in English, and Claude translates it into the language you talk to it in, right-to-left scripts included
 
 ## What you need

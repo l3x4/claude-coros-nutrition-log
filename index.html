@@ -247,6 +247,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 .key { display: inline-flex; align-items: center; gap: 6px; }
 .sw-bar { width: 10px; height: 10px; border-radius: 2px; background: var(--s-eat); }
 .sw-line { width: 16px; height: 2px; border-radius: 1px; background: var(--s-burn); }
+/* Weight on the intake vs burn chart: the weight chart's own marks (accent line, hollow dots). */
+.sw-w { position: relative; width: 16px; height: 2px; border-radius: 1px; background: var(--accent); }
+.sw-w::after { content: ""; position: absolute; left: 4px; top: -3px; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; background: var(--panel); border: 1.5px solid var(--accent); }
+.chart .w-avg { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .w-pt { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+.chart .w-pt.last { fill: var(--accent); }
+.chart .w-axis { fill: var(--accent); font: 11px var(--font-mono); }
+.chart .w-grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
 
 .targets td { padding: 4px; }
 .targets input { padding: 6px 6px; text-align: end; font-variant-numeric: tabular-nums; }
@@ -406,14 +414,14 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 
   <section class="card" aria-labelledby="ebH">
     <h2 id="ebH" data-i18n="ebH"></h2>
-    <p class="keys"><span class="key"><span class="sw-bar" aria-hidden="true"></span><span data-i18n="keyEat"></span></span><span class="key"><span class="sw-line" aria-hidden="true"></span><span data-i18n="keyBurn"></span></span></p>
+    <p class="keys"><span class="key"><span class="sw-bar" aria-hidden="true"></span><span data-i18n="keyEat"></span></span><span class="key"><span class="sw-line" aria-hidden="true"></span><span data-i18n="keyBurn"></span></span><span class="key" id="ebKeyW"><span class="sw-w" aria-hidden="true"></span><span data-i18n="keyWeight"></span></span></p>
     <p class="readout num" id="ebReadout"></p>
     <div class="chart" id="ebChart" dir="ltr"></div>
     <details>
       <summary data-i18n="ebTable"></summary>
       <div class="scroll">
         <table>
-          <thead><tr><th data-i18n="thDay"></th><th class="r" data-i18n="thEat"></th><th class="r" data-i18n="thBurn"></th><th class="r" data-i18n="thBal"></th></tr></thead>
+          <thead><tr><th data-i18n="thDay"></th><th class="r" data-i18n="thEat"></th><th class="r" data-i18n="thBurn"></th><th class="r" data-i18n="thBal"></th><th class="r" data-i18n="thW"></th></tr></thead>
           <tbody id="ebBody"></tbody>
         </table>
       </div>
@@ -511,7 +519,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 10,
+  "_version": 12,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -604,13 +612,17 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "legOver": "above target",
   "legLow": "under 80%: something not logged?",
   "balHint": "Balance = eaten − burned: minus is a deficit, plus a surplus. About 7,700 kcal ≈ 1 kg of body weight. Today's balance is grey: the day isn't over.",
-  "ebH": "Eaten and burned, 14 days",
+  "ebH": "Eaten, burned and weight, 14 days",
   "keyEat": "Eaten",
   "keyBurn": "Burn: COROS with correction",
+  "keyWeight": "Weight, kg (scale on the right)",
   "ebTable": "As a table",
-  "ebHint": "Tap a day to open it above. A hollow dot is today: the watch is still counting and food may not all be logged yet.",
+  "ebHint": "Tap a day to open it above. A hollow orange dot is today: the watch is still counting and food may not all be logged yet. Weight runs along the top on its own scale: dots are morning weigh-ins, the line is the 7-day average.",
   "ebEmpty": "No logs or COROS data in the last 14 days yet.",
-  "ebAria": "Eaten and burned per day for 14 days; details in the table below",
+  "ebAria": "Eaten, burned and morning weight per day for 14 days; details in the table below",
+  "ebW": "weight {w} kg",
+  "ebWBoth": "weight {w} kg, 7-day average {a}",
+  "ebWAvg": "weight, 7-day average {a} kg",
   "wH": "Weight",
   "wEmpty": "Weigh yourself in the morning before eating and log it. Dots and a 7-day average will appear here.",
   "photosH": "Progress photos",
@@ -1797,7 +1809,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var cal = calibration(), now = today(), rows = [];
     for (var i = EB_DAYS - 1; i >= 0; i--) {
       var date = addDays(now, -i), meals = mealsOn(date), b = burnOn(date, cal);
-      rows.push({ date: date, eat: meals.length ? totals(meals).kcal : null, burn: b ? b.total : null, partial: date === now });
+      var wd = dayDoc(date), wa = avgWeight(date, 7);
+      rows.push({
+        date: date, eat: meals.length ? totals(meals).kcal : null, burn: b ? b.total : null, partial: date === now,
+        w: wd && finite(wd.weight) ? wd.weight : null, a: wa ? wa.avg : null
+      });
     }
     return rows;
   }
@@ -1821,6 +1837,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       tr.appendChild(el("td", "r num", r.burn !== null ? F.plain.format(Math.round(r.burn)) : "—"));
       var bal = r.eat !== null && r.burn !== null ? r.eat - r.burn : null;
       tr.appendChild(el("td", "r num" + (r.partial ? " partial" : ""), bal === null ? "—" : signedPlain(bal)));
+      tr.appendChild(el("td", "r num", r.w !== null ? fmt1(r.w) : "—"));
       body.appendChild(tr);
     });
 
@@ -1831,8 +1848,12 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       ro.textContent = "";
       return;
     }
-    var W = Math.max(280, Math.round(box.clientWidth || 600)), H = 220;
-    var m = { l: 42, r: 8, t: 12, b: 24 };
+    // Weight shares the days: it runs in a band along the top on its own scale (right axis),
+    // and the kcal bars and burn line keep the space below it, so the two never overlap.
+    var hasW = rows.some(function (r) { return r.a !== null; });
+    $("#ebKeyW").hidden = !hasW;
+    var W = Math.max(280, Math.round(box.clientWidth || 600)), H = hasW ? 256 : 220;
+    var m = { l: 42, r: hasW ? 36 : 8, t: 12, b: 24 };
     var max = 0;
     rows.forEach(function (r) { if (r.eat !== null) max = Math.max(max, r.eat); if (r.burn !== null) max = Math.max(max, r.burn); });
     var step = max <= 4000 ? 1000 : max <= 10000 ? 2000 : 5000;
@@ -1840,8 +1861,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var plotW = W - m.l - m.r, plotH = H - m.t - m.b;
     var slot = plotW / rows.length;
     var bw = Math.min(24, Math.max(6, slot * 0.56));
+    var kTop = hasW ? m.t + Math.round(plotH * 0.3) : m.t, base = m.t + plotH;
     function cx(i) { return m.l + slot * (i + 0.5); }
-    function sy(v) { return m.t + (1 - v / yMax) * plotH; }
+    function sy(v) { return base - v / yMax * (base - kTop); }
 
     var g = "", selIdx = -1;
     rows.forEach(function (r, i) { if (r.date === state.selected) selIdx = i; });
@@ -1856,6 +1878,33 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       var top = sy(r.eat);
       g += '<path class="eat' + (r.partial ? " dim" : "") + '" d="' + colPath(cx(i) - bw / 2, top, bw, sy(0) - top, 4) + '"/>';
     });
+    if (hasW) {
+      var wv = [];
+      rows.forEach(function (r) { if (r.w !== null) wv.push(r.w); if (r.a !== null) wv.push(r.a); });
+      var lo = Math.min.apply(null, wv), hi = Math.max.apply(null, wv);
+      if (hi - lo < 1) { var mid = (hi + lo) / 2; lo = mid - 0.5; hi = mid + 0.5; }
+      lo = Math.floor(lo * 2) / 2; hi = Math.ceil(hi * 2) / 2;
+      var wTop = m.t + 6, wBot = kTop - 14;
+      var wy = function (v) { return wBot - (v - lo) / (hi - lo) * (wBot - wTop); };
+      [hi, lo].forEach(function (v) {
+        var yy = wy(v).toFixed(1);
+        g += '<line class="w-grid" x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + yy + '" y2="' + yy + '"/>';
+        g += '<text class="w-axis" x="' + (W - m.r + 4) + '" y="' + (Number(yy) + 4).toFixed(1) + '">' + fmt1(v) + '</text>';
+      });
+      var wseg = "", wsegs = [];
+      rows.forEach(function (r, i) {
+        if (r.a === null) { if (wseg) wsegs.push(wseg); wseg = ""; return; }
+        wseg += (wseg ? "L" : "M") + cx(i).toFixed(1) + " " + wy(r.a).toFixed(1) + " ";
+      });
+      if (wseg) wsegs.push(wseg);
+      wsegs.forEach(function (d) { g += '<path class="w-avg" d="' + d + '"/>'; });
+      var lastW = -1;
+      rows.forEach(function (r, i) { if (r.w !== null) lastW = i; });
+      rows.forEach(function (r, i) {
+        if (r.w === null) return;
+        g += '<circle class="w-pt' + (i === lastW ? " last" : "") + '" cx="' + cx(i).toFixed(1) + '" cy="' + wy(r.w).toFixed(1) + '" r="' + (i === lastW ? 4 : 3) + '"/>';
+      });
+    }
     var seg = "", segs = [];
     rows.forEach(function (r, i) {
       if (r.burn === null) { if (seg) segs.push(seg); seg = ""; return; }
@@ -1867,7 +1916,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (r.burn === null) return;
       g += '<circle class="burn-pt' + (r.partial ? " partial" : "") + '" cx="' + cx(i).toFixed(1) + '" cy="' + sy(r.burn).toFixed(1) + '" r="4"/>';
     });
-    var every = slot >= 20 ? 1 : 2;
+    var every = slot >= 18 ? 1 : 2;
     rows.forEach(function (r, i) {
       if ((rows.length - 1 - i) % every) return;
       g += '<text class="xl' + (i === selIdx ? " sel" : "") + '" x="' + cx(i).toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle">' + parseIso(r.date).getDate() + '</text>';
@@ -1887,6 +1936,11 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         ro.appendChild(tBold(r.partial ? "ebReadoutRun" : "ebReadoutBal", v));
       } else {
         ro.appendChild(tBold("ebReadout", v));
+      }
+      if (r.w !== null || r.a !== null) {
+        ro.appendChild(document.createTextNode(" · "));
+        var wv2 = { w: r.w !== null ? fmt1(r.w) : "", a: r.a !== null ? fmt1(r.a) : "" };
+        ro.appendChild(tBold(r.w !== null && r.a !== null ? "ebWBoth" : r.w !== null ? "ebW" : "ebWAvg", wv2));
       }
       if (cursor) {
         var x = cx(i).toFixed(1);
