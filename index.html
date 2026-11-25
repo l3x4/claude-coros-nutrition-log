@@ -294,6 +294,12 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
           <label class="btn small" for="camFoodGal"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 17.5l5-5 4 4 2.5-2.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></label>
         </div>
         <div class="split">
+          <input type="file" id="camScaleCam" class="vh" accept="image/*" capture="environment">
+          <label class="btn ghost small" for="camScaleCam"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8.5" y="7.5" width="7" height="3.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span data-i18n="camScale"></span></label>
+          <input type="file" id="camScaleGal" class="vh" accept="image/*" data-i18n-aria="camScaleGal">
+          <label class="btn ghost small" for="camScaleGal"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 17.5l5-5 4 4 2.5-2.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></label>
+        </div>
+        <div class="split">
           <input type="file" id="camBodyCam" class="vh" accept="image/*" capture="environment">
           <label class="btn ghost small" for="camBodyCam"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camBody"></span></label>
           <input type="file" id="camBodyGal" class="vh" accept="image/*" multiple data-i18n-aria="camBodyGal">
@@ -307,6 +313,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         <label class="btn ghost small" id="camAddCam"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="camAdd"></span></label>
         <label class="btn ghost small" id="camAddGal"><svg class="cam-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="10" r="1.6" fill="currentColor"/><path d="M4.5 17.5l5-5 4 4 2.5-2.5 3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span data-i18n="camFromGal"></span></label>
       </div>
+      <label class="field" for="camKg" id="camKgWrap" hidden><span data-i18n="weightLbl"></span><input id="camKg" inputmode="decimal" data-i18n-ph="weightPh"></label>
       <label class="field" for="camSaid" id="camSaidWrap"><span data-i18n="camSaidLbl"></span><textarea id="camSaid" rows="2" maxlength="500" data-i18n-ph="camSaidPh"></textarea></label>
       <div class="actions">
         <button class="btn" type="submit" id="camGo"></button>
@@ -504,7 +511,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 9,
+  "_version": 10,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -637,6 +644,13 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "camAdd": "Add photo",
   "camFromGal": "From gallery",
   "camRemove": "Remove photo",
+  "camScale": "Scale",
+  "camScaleGal": "Scale photo from gallery",
+  "camReading": "Reading the scale…",
+  "camScaleRead": "Read {w} kg from the photo. Check it and tap Save.",
+  "camScaleFail": "Couldn't read the scale. Type the weight.",
+  "camWeightSaved": "Saved today's weight: {w} kg.",
+  "camWeightFail": "Couldn't save the weight. Try again.",
   "camNoPicker": "No photo picker? The app you're viewing this in may not open one from a page. Open this page in your phone's browser, or send the photo to Claude in chat.",
   "pendingTag": "no estimate yet",
   "wHint": "Dots are morning weigh-ins, the line is the 7-day average, the dashed line is the plan to the goal. Watch the average: daily weight jumps 0.5–1.5 kg with water and salt.",
@@ -2099,20 +2113,21 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   // Food photos are uploaded as the page's assets, estimated by Claude (sample) and saved as a meal with the
   // photos and the user's own words; without an estimate the meal waits, `pending`, for Claude in chat.
   // Progress photos are uploaded and saved as photo docs with their view.
-  var CAM_MAX_SIDE = 1280, CAM_MAX = { food: 4, body: 3 };
+  var CAM_MAX_SIDE = 1280, CAM_MAX = { food: 4, body: 3, scale: 1 };
   var cam = { kind: null, items: [], busy: false };
   async function setupCam() {
     var assets = null;
     try { assets = await window.claude.use("assets"); } catch (e) { assets = null; }
     $("#camCard").hidden = !assets;
   }
-  var CAM_INPUTS = { food: ["#camFoodCam", "#camFoodGal"], body: ["#camBodyCam", "#camBodyGal"] };
+  var CAM_INPUTS = { food: ["#camFoodCam", "#camFoodGal"], scale: ["#camScaleCam", "#camScaleGal"], body: ["#camBodyCam", "#camBodyGal"] };
+  function camInputs() { return CAM_INPUTS.food.concat(CAM_INPUTS.scale, CAM_INPUTS.body); }
   // Each pick adds to the photos already chosen for the same kind; picking the other kind starts over.
   function camPicked(kind, list) {
     var files = Array.prototype.slice.call(list || []).filter(function (f) { return /^image\//.test(f.type); });
     camResetInputs();
     if (!files.length || cam.busy) return;
-    if (cam.kind !== kind) camClear();
+    if (cam.kind !== kind || kind === "scale") camClear();
     cam.kind = kind;
     files.slice(0, CAM_MAX[kind] - cam.items.length).forEach(function (f) {
       var item = { file: f, url: URL.createObjectURL(f), view: PHOTO_VIEWS[cam.items.length] || "front" };
@@ -2139,9 +2154,66 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#camAddGal").htmlFor = CAM_INPUTS[kind][1].slice(1);
     $("#camMore").hidden = cam.items.length >= CAM_MAX[kind];
     $("#camSaidWrap").hidden = kind !== "food";
+    $("#camKgWrap").hidden = kind !== "scale";
     $("#camGo").textContent = t(kind === "food" ? "camLog" : "camSave");
     $("#camForm").hidden = false;
     camMsg("");
+    if (kind === "scale") readScale(cam.items[0]);
+  }
+  // Asks Claude to read the number on the scale's display; the user checks it before saving.
+  var scaleRead = 0;
+  async function readScale(item) {
+    var my = ++scaleRead, kg = null;
+    $("#camKg").value = "";
+    $("#camGo").disabled = true;
+    camMsg(t("camReading"));
+    try {
+      var sample = await window.claude.use("sample");
+      var lim = sample ? await sample.limits().catch(function () { return null; }) : null;
+      if (lim && lim.images) {
+        var blob = await shrink(item.file);
+        var v = await sample.json([
+          "The photo shows a bathroom scale. Read the body weight on its display.",
+          "The weight is the largest number, usually with one or two decimals. Ignore the temperature, the battery and any other icons.",
+          "If the scale shows pounds (lb), convert to kilograms.",
+          "Reply with only a JSON object like {\"kg\": 98.7}, or {\"kg\": null} if you can't read it."
+        ].join("\n"), { images: [blob], cache: false });
+        var n = v && v.kg !== null ? Number(v.kg) : NaN;
+        if (isFinite(n) && n >= 30 && n <= 250) kg = Math.round(n * 10) / 10;
+      }
+    } catch (e) { kg = null; }
+    if (my !== scaleRead || cam.kind !== "scale" || cam.items.indexOf(item) < 0) return;
+    $("#camGo").disabled = false;
+    if (kg !== null) {
+      $("#camKg").value = fmt1(kg);
+      camMsg(t("camScaleRead", { w: fmt1(kg) }));
+      $("#camGo").focus();
+    } else {
+      camMsg(t("camScaleFail"));
+      $("#camKg").focus();
+    }
+  }
+  async function saveScale() {
+    var v = num($("#camKg").value);
+    if (!isFinite(v) || v < 30 || v > 250) { camMsg(t("weightBad")); $("#camKg").focus(); return; }
+    v = Math.round(v * 10) / 10;
+    var date = today();
+    camLock(true);
+    try {
+      await write("day-" + date, function (ref) {
+        var data = clone(dayDoc(date));
+        data.kind = "day"; data.date = date; data.weight = v;
+        return ref.set(data);
+      });
+      camClear();
+      camMsg(t("camWeightSaved", { w: fmt1(v) }));
+      state.selected = date;
+      renderAll();
+    } catch (x) {
+      camMsg(t("camWeightFail"));
+    } finally {
+      camLock(false);
+    }
   }
   function camRemove(item, box) {
     if (cam.busy) return;
@@ -2153,7 +2225,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#camAddCam").focus();
   }
   function camResetInputs() {
-    ["#camFoodCam", "#camFoodGal", "#camBodyCam", "#camBodyGal"].forEach(function (q) { $(q).value = ""; });
+    camInputs().forEach(function (q) { $(q).value = ""; });
   }
   function camClear() {
     cam.items.forEach(function (it) { URL.revokeObjectURL(it.url); });
@@ -2161,6 +2233,8 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     cam.kind = null;
     $("#camPrev").textContent = "";
     $("#camSaid").value = "";
+    $("#camKg").value = "";
+    $("#camGo").disabled = false;
     $("#camForm").hidden = true;
     camResetInputs();
   }
@@ -2180,7 +2254,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   }
   function camLock(on) {
     cam.busy = on;
-    ["#camGo", "#camCancel", "#camFoodCam", "#camFoodGal", "#camBodyCam", "#camBodyGal"].forEach(function (q) { $(q).disabled = on; });
+    ["#camGo", "#camCancel"].concat(camInputs()).forEach(function (q) { $(q).disabled = on; });
     document.querySelectorAll(".cam-x").forEach(function (b) { b.disabled = on; });
   }
   // A JPEG of at most CAM_MAX_SIDE px a side: smaller uploads, and the browser applies the photo's rotation.
@@ -2237,6 +2311,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   async function camSubmit(e) {
     e.preventDefault();
     if (cam.busy || !cam.items.length || !requireDb()) return;
+    if (cam.kind === "scale") { await saveScale(); return; }
     var assets = null;
     try { assets = await window.claude.use("assets"); } catch (x) { assets = null; }
     if (!assets) { camMsg(t("camFail")); return; }
