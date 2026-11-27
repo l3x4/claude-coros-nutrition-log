@@ -40,7 +40,7 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
   "title": "lunch",
   "desc": "Plov with beef ~480 g (~920); tomato salad (~90); cola, can (~135)",
   "note": "Estimated from the photo: ~150 g meat, ~20 g oil",
-  "kcal": 1150, "p": 50, "f": 41, "c": 144,
+  "kcal": 1150, "p": 50, "f": 41, "c": 144, "fib": 9,
   "src": "photo",
   "said": "Plov, tomato salad, a can of coke",
   "photos": ["3f9c0e…", "a17b52…"],
@@ -52,6 +52,7 @@ All paths are inside `data/users/<id>/`. Every write to an existing document nee
 - `title`: `breakfast` | `lunch` | `dinner` | `snack` | `workout` (fuel during training).
 - `src`: `photo` | `label` (nutrition label seen) | `said` (described, no photo) | `manual`.
 - `kcal`, `p`, `f`, `c`: whole numbers (kcal, grams of protein, fat, carbs). Keep `kcal` close to 4p + 9f + 4c unless alcohol or fibre explains the gap.
+- `fib`: dietary fiber in grams, a whole number; estimate it for every meal (from the label when it lists fiber). The page totals it per day against the adequate intake: 38 g for men under 51 and 30 g from 51, 25 g and 21 g for women.
 - `said`: optional, the user's own message about this meal, word for word, in any language. The page shows it in quotes.
 - `photos`: optional, up to 12 asset ids of the meal's photos. The page shows them as thumbnails.
 - `pending`: set by the page's camera on a meal it couldn't estimate (no `kcal` yet). See the logging rules.

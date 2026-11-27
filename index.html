@@ -181,6 +181,7 @@ details[open] > summary { margin-bottom: 10px; }
 .meal-form { display: grid; gap: 8px; }
 .row2 { display: grid; grid-template-columns: 1fr 110px; gap: 8px; }
 .grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.grid5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
 .field { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .set-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -373,11 +374,12 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         <label class="field" for="mDesc"><span data-i18n="whatLbl"></span>
           <input id="mDesc" name="desc" data-i18n-ph="whatPh">
         </label>
-        <div class="grid4">
+        <div class="grid5">
           <label class="field" for="mKcal"><span data-i18n="kcalLbl"></span><input id="mKcal" name="kcal" inputmode="numeric" data-i18n-ph="autoPh"></label>
           <label class="field" for="mP"><span data-i18n="pLbl"></span><input id="mP" name="p" inputmode="decimal"></label>
           <label class="field" for="mF"><span data-i18n="fLbl"></span><input id="mF" name="f" inputmode="decimal"></label>
           <label class="field" for="mC"><span data-i18n="cLbl"></span><input id="mC" name="c" inputmode="decimal"></label>
+          <label class="field" for="mFib"><span data-i18n="fibLbl"></span><input id="mFib" name="fib" inputmode="decimal"></label>
         </div>
         <p class="hint" data-i18n="autoHint"></p>
         <div class="actions">
@@ -514,7 +516,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
 <!-- All page text in English: the single source for translations (see TRANSLATING.md). -->
 <script type="application/json" id="i18n-en">
 {
-  "_version": 12,
+  "_version": 13,
   "title": "Food, weight & burn",
   "goal": "Goal: {s} → {g} kg",
   "goalNone": "Set your start and goal weight in Settings",
@@ -552,6 +554,9 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "barP": "Protein",
   "barF": "Fat",
   "barC": "Carbs",
+  "barFib": "Fiber",
+  "fibPartial": "Fiber is estimated for {n} of {m} meals.",
+  "fibNone": "No fiber estimates for this day: meals logged before fiber tracking don't have one.",
   "g": "g",
   "weightLbl": "Morning weight, kg",
   "weightPh": "e.g. 94.6",
@@ -573,6 +578,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "pLbl": "Protein, g",
   "fLbl": "Fat, g",
   "cLbl": "Carbs, g",
+  "fibLbl": "Fiber, g",
   "autoPh": "auto",
   "autoHint": "Without kcal they are computed from macros: 4 × protein + 9 × fat + 4 × carbs.",
   "add": "Add",
@@ -756,6 +762,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   "macroP": "P",
   "macroF": "F",
   "macroC": "C",
+  "macroFib": "fiber",
   "langLbl": "Language",
   "goalDated": "Goal: {s} → {g} kg by {d}",
   "goalKeep": "Goal: keep {g} kg",
@@ -1164,9 +1171,10 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     return out;
   }
   function totals(meals) {
-    var tt = { kcal: 0, p: 0, f: 0, c: 0 };
+    var tt = { kcal: 0, p: 0, f: 0, c: 0, fib: 0, fibN: 0, n: meals.length };
     meals.forEach(function (m) {
-      ["kcal", "p", "f", "c"].forEach(function (k) { var v = Number(m.d[k]); if (isFinite(v)) tt[k] += v; });
+      ["kcal", "p", "f", "c", "fib"].forEach(function (k) { var v = Number(m.d[k]); if (m.d[k] !== undefined && m.d[k] !== null && isFinite(v)) tt[k] += v; });
+      if (finite(m.d.fib)) tt.fibN++;
     });
     return tt;
   }
@@ -1530,8 +1538,13 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     now.classList.add(ok ? "ok" : "warn");
   }
 
-  function renderBars(tt, tgt) {
-    var rows = [[t("barKcal"), "kcal", "", tgt.kcal], [t("barP"), "p", t("g"), tgt.p], [t("barF"), "f", t("g"), tgt.f], [t("barC"), "c", t("g"), tgt.c]];
+  // Daily fiber target: the adequate intake (US Institute of Medicine) by sex and age.
+  function fiberTarget(date) {
+    var pr = profile(), age = pr.ageOn(date);
+    return pr.sex === "female" ? (age < 51 ? 25 : 21) : (age < 51 ? 38 : 30);
+  }
+  function renderBars(tt, tgt, date) {
+    var rows = [[t("barKcal"), "kcal", "", tgt.kcal], [t("barP"), "p", t("g"), tgt.p], [t("barF"), "f", t("g"), tgt.f], [t("barC"), "c", t("g"), tgt.c], [t("barFib"), "fib", t("g"), fiberTarget(date)]];
     var box = $("#bars");
     box.textContent = "";
     rows.forEach(function (r) {
@@ -1541,14 +1554,17 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       var tr = el("div", "track");
       var fill = el("div", "fill");
       fill.style.width = (Math.min(ratio, 1) * 100) + "%";
-      if (r[1] === "p" && ratio >= 0.95) fill.classList.add("ok");
-      if (r[1] !== "p" && ratio > 1.05) fill.classList.add("over");
+      if ((r[1] === "p" || r[1] === "fib") && ratio >= 0.95) fill.classList.add("ok");
+      if (r[1] !== "p" && r[1] !== "fib" && ratio > 1.05) fill.classList.add("over");
       tr.appendChild(fill);
       row.appendChild(el("span", "bar-l", r[0]));
       row.appendChild(tr);
-      row.appendChild(el("span", "bar-v num", fmt(eaten) + " / " + fmt(target) + (r[2] ? " " + r[2] : "")));
+      var shown = r[1] === "fib" && !tt.fibN ? "—" : fmt(eaten);
+      row.appendChild(el("span", "bar-v num", shown + " / " + fmt(target) + (r[2] ? " " + r[2] : "")));
       box.appendChild(row);
     });
+    // Older meals have no fiber estimate: say how much of the day it covers.
+    if (tt.n && tt.fibN < tt.n) box.appendChild(el("p", "hint", tt.fibN ? t("fibPartial", { n: tt.fibN, m: tt.n }) : t("fibNone")));
   }
 
   function renderBurn(date, eaten) {
@@ -1609,6 +1625,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       if (finite(d.p)) mac.push(L[0] + " " + fmt(d.p));
       if (finite(d.f)) mac.push(L[1] + " " + fmt(d.f));
       if (finite(d.c)) mac.push(L[2] + " " + fmt(d.c));
+      if (finite(d.fib)) mac.push(t("macroFib") + " " + fmt(d.fib));
       if (mac.length) main.appendChild(el("div", "meal-macros num", mac.join(" · ")));
       var ph = mealPhotos(d);
       if (ph.length) {
@@ -1689,7 +1706,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     var lp = $("#kcalLeft");
     lp.textContent = left >= 0 ? t("left", { n: fmt(left) }) : t("over", { n: fmt(-left) });
     lp.className = "left" + (left < 0 ? " over" : "");
-    renderBars(tt, tgt);
+    renderBars(tt, tgt, date);
     renderBurn(date, tt.kcal);
 
     var wi = $("#weightInput");
@@ -2338,12 +2355,12 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
       "- If a nutrition label is readable, use it and set src to \"label\"; otherwise estimate the portions from the photo and set src to \"photo\". For packaged food without a readable label, use the usual pack size and nutrition of that product.",
       "- desc: the items with amounts and kcal in brackets, separated by \"; \", e.g. \"Plov with beef ~400 g (~760); tomato salad (~30)\".",
       "- note: one or two sentences on what you assumed (portion weights, kcal per 100 g, label numbers).",
-      "- kcal, p (protein, g), f (fat, g), c (carbs, g): whole numbers, kcal close to 4p + 9f + 4c.",
+      "- kcal, p (protein, g), f (fat, g), c (carbs, g), fib (dietary fiber, g): whole numbers, kcal close to 4p + 9f + 4c.",
       "- title: breakfast, lunch, dinner, snack or workout (food during training), judged from the food and the time.",
       "- Write desc and note in " + langName() + ".",
       "Local time: " + time + ".",
       "Their comment: " + (said || "(none)"),
-      "Reply with only a JSON object like {\"title\":\"lunch\",\"desc\":\"...\",\"note\":\"...\",\"kcal\":650,\"p\":32,\"f\":22,\"c\":80,\"src\":\"photo\"}."
+      "Reply with only a JSON object like {\"title\":\"lunch\",\"desc\":\"...\",\"note\":\"...\",\"kcal\":650,\"p\":32,\"f\":22,\"c\":80,\"fib\":6,\"src\":\"photo\"}."
     ].join("\n");
     var v = await sample.json(prompt, { images: blobs.slice(0, lim.images.maxCount || blobs.length), modelTier: "default", cache: false });
     if (!v || typeof v !== "object") return null;
@@ -2353,7 +2370,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     return {
       title: MEAL_KEYS.indexOf(v.title) >= 0 ? v.title : null,
       desc: String(v.desc || "").trim().slice(0, 600), note: String(v.note || "").trim().slice(0, 600),
-      kcal: kcal, p: n(v.p), f: n(v.f), c: n(v.c), src: v.src === "label" ? "label" : "photo"
+      kcal: kcal, p: n(v.p), f: n(v.f), c: n(v.c), fib: n(v.fib), src: v.src === "label" ? "label" : "photo"
     };
   }
   async function camSubmit(e) {
@@ -2390,7 +2407,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
         data.desc = est.desc;
         if (est.note) data.note = est.note;
         data.kcal = est.kcal;
-        ["p", "f", "c"].forEach(function (m) { if (est[m] !== null) data[m] = est[m]; });
+        ["p", "f", "c", "fib"].forEach(function (m) { if (est[m] !== null) data[m] = est[m]; });
         data.src = est.src;
       } else {
         data.desc = "";
@@ -2459,6 +2476,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     $("#mP").value = finite(d.p) ? String(d.p) : "";
     $("#mF").value = finite(d.f) ? String(d.f) : "";
     $("#mC").value = finite(d.c) ? String(d.c) : "";
+    $("#mFib").value = finite(d.fib) ? String(d.fib) : "";
     $("#mSave").textContent = t("saveChanges");
     $("#mCancel").hidden = false;
     $("#mealSummary").textContent = t("editEntry");
@@ -2468,7 +2486,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
   function submitMeal(e) {
     e.preventDefault();
     if (!requireDb()) return;
-    var p = num($("#mP").value), f = num($("#mF").value), c = num($("#mC").value), kcal = num($("#mKcal").value);
+    var p = num($("#mP").value), f = num($("#mF").value), c = num($("#mC").value), kcal = num($("#mKcal").value), fib = num($("#mFib").value);
     var desc = $("#mDesc").value.trim();
     var hasMacros = isFinite(p) || isFinite(f) || isFinite(c);
     if (!isFinite(kcal) && hasMacros) kcal = 4 * (isFinite(p) ? p : 0) + 9 * (isFinite(f) ? f : 0) + 4 * (isFinite(c) ? c : 0);
@@ -2482,7 +2500,7 @@ tbody tr.sel td { background: color-mix(in srgb, var(--accent) 10%, transparent)
     data.desc = desc;
     data.kcal = Math.round(kcal);
     delete data.pending;
-    ["p", "f", "c"].forEach(function (k) { var v = ({ p: p, f: f, c: c })[k]; if (isFinite(v)) data[k] = Math.round(v); else delete data[k]; });
+    ["p", "f", "c", "fib"].forEach(function (k) { var v = ({ p: p, f: f, c: c, fib: fib })[k]; if (isFinite(v)) data[k] = Math.round(v); else delete data[k]; });
     if (!existing) { data.src = "manual"; data.createdAt = Date.now(); }
     var id = state.editing || ("meal-" + data.date.replace(/-/g, "") + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5));
     var btn = $("#mSave");

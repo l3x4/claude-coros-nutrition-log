@@ -7,7 +7,7 @@ A food, weight and burn log that lives inside Claude. You send Claude a photo of
   <img src="docs/burn-chart.png" width="360" alt="Eaten, burned and weight over 14 days">
 </p>
 
-- Food log from photos, labels or a few words, with protein, fat and carbs
+- Food log from photos, labels or a few words, with protein, fat, carbs and fiber
 - Each meal keeps its photos and your own words; tap a thumbnail to see it full size
 - A camera at the top of the page: snap a meal (with a comment if you like) and Claude estimates and logs it, snap the scale and Claude reads your weight, or snap a progress photo
 - Progress photos by date, with that day's weight
